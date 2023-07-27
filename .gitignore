@@ -1,0 +1,11 @@
+# Ignore all files
+*
+
+# Unignore files with extension
+!*.*
+
+# Unignore directories
+!*/
+
+# Ignore .out files
+*.out
