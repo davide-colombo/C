@@ -7,11 +7,15 @@ int main(){
 
     int c;
     int nlines = 0;
-
+    
+    /////////////////////////////////////////////////////////////////////
     // nlines.s
     // using O3 optimization
-    
+
     /*
+    ;; setup block
+        ...
+        ...
     WHILE:
         branch and link -> getchar
         compare with EOF
@@ -31,10 +35,39 @@ int main(){
         return 
     */
 
-    while((c = getchar()) != EOF)
+   // C code
+    /*while((c = getchar()) != EOF)
         if(c == NEWLINE)
-            ++nlines;
+            ++nlines;*/
+
     
+    /////////////////////////////////////////////////////////////////////
+    // Using do-while
+    // nlines.s
+    // using O2 optimization
+
+    /*
+    ;; setup block
+        ...
+        ...
+    DO:
+        branch and link -> getchar
+        compare char to target
+        compare increment if equal (cinc)
+        compare negative
+        branch not equal to DO
+
+    ;; cleanup block here after
+        ...
+        ...
+    */
+
+    // C code
+    do{
+        c = getchar();
+        if(c == NEWLINE) nlines = nlines + 1;
+    }while(c != EOF);
+
     // Commented just for looking at the assembly generated
     // printf("nlines = %d\n", nlines);
     return nlines;
