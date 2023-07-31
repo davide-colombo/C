@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 
-main(){
+int main(){
 
     int c;
     long nchars;

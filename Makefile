@@ -1,23 +1,23 @@
-
 CC:= cc
 CFLAGS:= -O2
 
-trgs:= nlines
-objs:= $(wildcard $(trgs)*.o)
-asms:= $(wildcard $(trgs)*.s)
+trgs:= nlines nblanks
+objs:= $(patsubst %,%.o,$(trgs))
+asms:= $(patsubst %,%.s,$(trgs))
 
 # Targets
 $(trgs): %: %.o
+	$(CC) $(CFLAGS) -o $@ $<
 
 # Object files
 $(objs): %.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Creates the assembly file for inspection
-$(trgs).s: %.s: %.c
+$(asms): %.s: %.c
 	$(CC) $(CFLAGS) -S -o $@ $<
 
-# Creates one target for each element in the "trgs" variable;
 # Use a pattern matching rule that does not have prerequisites (nothing after the second colon);
 # Use the "$*" to take the stem (i.e., the part that corresponds to the '%');
-clean_$(trgs): clean_%:
+cl%: %.c
 	rm -f $* $*.o $*.s
