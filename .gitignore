@@ -7,5 +7,14 @@
 # Unignore directories
 !*/
 
+# Unignore Makefile
+!Makefile
+
 # Ignore .out files
 *.out
+
+# Ignore object files
+*.o
+
+# Ignore assembly files
+*.s
