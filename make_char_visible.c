@@ -6,6 +6,8 @@
 #define HTAB 0x0009
 #define BSLH 0x005C
 
+#define NULL_CHAR '\0'
+
 int main(){
 
     int32_t c;
@@ -20,6 +22,12 @@ int main(){
         uint32_t c3 = (bcks_mask & '\\') | (~bcks_mask & c2);
 
         putchar(c3);
+
+        uint32_t c4 = (bslh_mask & '\\') | (~bslh_mask & NULL_CHAR);
+        uint32_t c5 = (htab_mask & 't') | (~htab_mask & c4);
+        uint32_t c6 = (bcks_mask & 'b') | (~bcks_mask & c5);
+
+        putchar(c6);
     }
 
     return 0;
