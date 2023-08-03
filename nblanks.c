@@ -4,7 +4,7 @@
 
 #define HTAB 0x0009     // 0000 1001
 #define NEWL 0x000A     // 0000 1010
-#define SPCE 0x0020      // 0010 0000
+#define SPCE 0x0020     // 0010 0000
 
 int main(){
 
