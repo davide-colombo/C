@@ -8,8 +8,6 @@
 
 int main(){
 
-    int32_t c;
-    uint64_t nchars;
     /////////////////////////////////////////////////////////////////
     // nblanks.s
     // compiled with O2 level
@@ -53,9 +51,9 @@ int main(){
     // nblanks.s, do-while version
     // compiled with O2 level
 
+    int32_t c;
     uint32_t nl, ns, nt;            // newline, space, tab counter
     nl = ns = nt = 0;               // initialize counters
-
     do{
         c = getchar();
         nl += (c == NEWL);
@@ -64,8 +62,7 @@ int main(){
     } while(c != EOF);
     
     uint64_t nchars_1 = nl + ns;
-    uint64_t nchars_2 = 0 + nt;
-    nchars = nchars_1 + nchars_2;
+    uint64_t nchars = nchars_1 + nt;
 
     printf("nchars = %llu\n", nchars);
     return 0;
