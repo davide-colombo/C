@@ -28,5 +28,17 @@ int main(){
     printf("\n<MEMORY ADDRESS>\n");
     printf("sizeof void* \t=\t %zu bytes\n", sizeof(ptr));
 
+    printf("\n<INTEGER LIMITS>\n");
+    printf("INT8_MIN \t=\t %d\n", INT8_MIN);
+    printf("INT8_MAX \t=\t %d\n", INT8_MAX);
+    printf("INT16_MIN \t=\t %d\n", INT16_MIN);
+    printf("INT16_MAX \t=\t %d\n", INT16_MAX);
+    printf("INT32_MIN \t=\t %d\n", INT32_MIN);
+    printf("INT32_MAX \t=\t %d\n", INT32_MAX);
+    printf("INT64_MIN \t=\t %lld\n", INT64_MIN);
+    printf("INT64_MAX \t=\t %lld\n", INT64_MAX);
+
+    printf("\n");
+
     return 0;
 }
