@@ -2,12 +2,12 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define SPCE 0x0020
-#define HTAB 0x0009
-#define NEWL 0x000A
+#define SPCE        (uint32_t) 0x00000020
+#define HTAB        (uint32_t) 0x00000009
+#define NEWL        (uint32_t) 0x0000000A
 
-#define IN 1
-#define OUT 0
+#define IN_WORD     (uint32_t) 0xFFFFFFFF
+#define OUT_WORD    (uint32_t) 0x00000000
 
 int main(){
 
@@ -16,21 +16,25 @@ int main(){
     uint64_t nw;
 
     nw = 0;
-    st = OUT;
+    st = OUT_WORD;
     while((c = getchar()) != EOF){
-        uint32_t not_space = ((c != SPCE) && (c != NEWL) && (c != HTAB));
-        uint32_t is_space = ((c == SPCE) || (c == NEWL) || (c == HTAB)); 
 
-        uint32_t st_in = (st == IN);
-        uint32_t st_out = (st == OUT);
+        uint32_t spce_mask = (uint32_t) ((int32_t) ((c == SPCE) << 31) >> 31);
+        uint32_t newl_mask = (uint32_t) ((int32_t) ((c == NEWL) << 31) >> 31);
+        uint32_t htab_mask = (uint32_t) ((int32_t) ((c == HTAB) << 31) >> 31);
 
-        uint32_t switch_in = (st_out && not_space);
-        uint32_t switch_out = (st_in && is_space);
+        uint32_t not_space = (~spce_mask & ~newl_mask & ~htab_mask);
+        uint32_t is_space = (spce_mask | newl_mask | htab_mask);
 
-        uint32_t st1 = (switch_in && IN) || (!switch_in && st);
-        st = (switch_out && OUT) || (!switch_out && st1);
+        uint32_t switch_in = (~st & not_space);
+        uint32_t switch_out = (st & is_space);
 
-        nw += switch_in;
+        uint32_t st1 = (switch_in & IN_WORD) | (~switch_in & st);
+        st = (switch_out & OUT_WORD) | (~switch_out & st1);
+
+        // increment
+        uint32_t nw1 = nw + 1;
+        nw = (switch_in & nw1) | (~switch_in & nw);
     }
 
     printf("nwords = %llu\n", nw);
