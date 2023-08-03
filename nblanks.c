@@ -1,11 +1,15 @@
 
 #include <stdio.h>
+#include <stdint.h>
+
+#define HTAB 9
+#define NEWL 10
+#define SPC 32
 
 int main(){
 
-    int c;
-    long nchars;
-
+    int32_t c;
+    uint64_t nchars;
     /////////////////////////////////////////////////////////////////
     // nblanks.s
     // compiled with O2 level
@@ -49,13 +53,20 @@ int main(){
     // nblanks.s, do-while version
     // compiled with O2 level
 
-    // The generated instructions are much better, without bubbles due to branches.
+    uint32_t nl, ns, nt;            // newline, space, tab counter
+    nl = ns = nt = 0;               // initialize counters
 
-    // C code
     do{
         c = getchar();
-        if(c == '\t' || c == '\n' || c == ' ') nchars = nchars + 1;
+        nl += (c == NEWL);
+        ns += (c == SPC);
+        nt += (c == HTAB);
     } while(c != EOF);
+    
+    uint64_t nchars_1 = nl + ns;
+    uint64_t nchars_2 = 0 + nt;
+    nchars = nchars_1 + nchars_2;
 
-    return nchars;
+    printf("nchars = %llu\n", nchars);
+    return 0;
 }
