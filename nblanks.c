@@ -51,25 +51,30 @@ int main(){
     // nblanks.s, do-while version
     // compiled with O2 level
 
-    int32_t c;                      // must be a signed integer
-    uint32_t nl, ns, nt;            // newline, space, tab counter
-    nl = ns = nt = 0;               // initialize counters
+    int32_t c;
+    uint64_t nchars;
+    nchars = 0;
+
     do{
         c = getchar();
         //nl += !((c ^ NEWL) | (c & ~NEWL));      // same as (c == NEWL)
         //ns += !((c ^ SPCE) | (c & ~SPCE));      // same as (c == SPCE)
         //nt += !((c ^ HTAB) | (c & ~HTAB));      // same as (c == HTAB)
-        
-        // much shorted with -O0 option
-        nl += (c == NEWL);
+        uint32_t nwl_eq = (c == NEWL);
+        uint32_t spc_eq = (c == SPCE);
+        uint32_t tab_eq = (c == HTAB);
+
+        nchars += nwl_eq + spc_eq + tab_eq;
+
+        /*nl += (c == NEWL);
         ns += (c == SPCE);
-        nt += (c == HTAB);
+        nt += (c == HTAB);*/
     } while(c != EOF);
     
     // Make the two ADD instructions independent
-    uint64_t nchars_1 = nl + ns;
-    uint64_t nchars_2 = nt + 0;
-    uint64_t nchars = nchars_1 + nchars_2;
+    //uint64_t nchars_1 = nl + ns;
+    //uint64_t nchars_2 = nt + 0;
+    //uint64_t nchars = nchars_1 + nchars_2;
 
     printf("nchars = %llu\n", nchars);
     return 0;
