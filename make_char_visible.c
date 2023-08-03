@@ -10,12 +10,17 @@ int main(){
 
     int32_t c;
 
-    do{
-        c = getchar();
-        uint32_t bcks_mask = (uint32_t) ((int32_t) ((c == HTAB) << 31) >> 31);
-        uint32_t new_c = (bcks_mask & '\\') | (~bcks_mask & c);
-        putchar(new_c);
-    }while(c != EOF);
+    while((c = getchar()) != EOF){
+        uint32_t bslh_mask = (uint32_t) ((int32_t) ((c == BSLH) << 31) >> 31);
+        uint32_t htab_mask = (uint32_t) ((int32_t) ((c == HTAB) << 31) >> 31);
+        uint32_t bcks_mask = (uint32_t) ((int32_t) ((c == BCKS) << 31) >> 31);
+
+        uint32_t c1 = (bslh_mask & '\\') | (~bslh_mask & c);
+        uint32_t c2 = (htab_mask & '\\') | (~htab_mask & c1);
+        uint32_t c3 = (bcks_mask & '\\') | (~bcks_mask & c2);
+
+        putchar(c3);
+    }
 
     return 0;
 }
