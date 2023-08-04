@@ -1,7 +1,7 @@
 CC:= cc
 CFLAGS:= -O2
 
-trgs:= nlines nblanks make_char_visible nwords limits
+trgs:= nlines nblanks make_char_visible nwords limits getline
 objs:= $(patsubst %,%.o,$(trgs))
 asms:= $(patsubst %,%.s,$(trgs))
 
