@@ -3,9 +3,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define MAXL    (uint32_t) 1000
-#define EOL     (uint32_t) '\n'
-#define NUL     (uint32_t) '\0'
+#define MAXL    (uint32_t) 100
+#define EOL     (uint32_t) 0x0000000A
+#define NUL     (uint32_t) 0x00000000
 
 static uint32_t mygetline(char *s, uint32_t lim);
 
@@ -38,9 +38,9 @@ static uint32_t mygetline(char *s, uint32_t lim){
     do{
         c = getchar();
 
-        uint32_t eof_mask = (uint32_t) ((int32_t) ((c == EOF) << 31) >> 31);
-        uint32_t eol_mask = (uint32_t) ((int32_t) ((c == EOL) << 31) >> 31);
-        uint32_t lim_mask = (uint32_t) ((int32_t) ((lim > 1) << 31) >> 31);
+        uint32_t eof_mask = (uint32_t) (((int32_t) (c == EOF) << 31) >> 31);
+        uint32_t eol_mask = (uint32_t) (((int32_t) (c == EOL) << 31) >> 31);
+        uint32_t lim_mask = (uint32_t) (((int32_t) (lim > 1) << 31) >> 31);
 
         // next possible limit
         uint32_t ldec = lim - 1;                                                        // if lim == 0, then lim1 = UINT32_MAX
@@ -51,15 +51,27 @@ static uint32_t mygetline(char *s, uint32_t lim){
         uint32_t lim3 = (eol_mask & 0) | (~eol_mask & lim2);                            // set to 0 if EOL
         lim = lim3;
 
-        // update tmp
-        uint32_t tmp1 = (~eof_mask & c) | (eof_mask & '\0');
-        uint32_t tmp2 = (lim_mask & tmp1) | (~lim_mask & '\0');
+        // update *tmp
+        uint32_t tmp1 = (~eof_mask & c) | (eof_mask & NUL);
+        uint32_t tmp2 = (lim_mask & tmp1) | (~lim_mask & NUL);
         *tmp = tmp2;
 
-        // update *tmp
+        // update tmp
         uint32_t tinc1 = (~eof_mask & 1) | (eof_mask & 0);
         uint32_t tinc2 = (lim_mask & tinc1) | (~lim_mask & 0);
         tmp += tinc2;
+
+        // extra update tmp if EOL
+        uint32_t tince = (eol_mask & 0) | (~eol_mask & 1);
+        tmp -= tince;
+
+        // extra update *tmp if EOL
+        uint32_t tmpe = (eol_mask & NUL) | (~eol_mask & tmp2);
+        *tmp = tmpe;
+
+        // re-apply the increment in case c != EOL
+        uint32_t tincr = (eol_mask & 0) | (~eol_mask & tinc2);
+        tmp += tincr;
 
     }while(lim > 0);
     return (uint32_t)((tmp - s) / sizeof(char));
