@@ -24,12 +24,19 @@ static int mygetline(char s[], int32_t lim){
     int32_t c, i;
 
     i = 0;
-    lim -= 1;
-    while(i < lim && (c = getchar()) != EOF && c != '\n')
-        s[i++] = c;
-    
-    if(c == '\n')
-        s[i++] = '\n';
+    lim -= 2;
+    do{
+        c = getchar();
+        if(c == EOF){
+            break;
+        }else{
+            s[i] = c;
+            i++;
+        }
+
+        if(i >= lim || c == '\n') break;
+
+    }while(1);
 
     s[i] = '\0';
     return i;
