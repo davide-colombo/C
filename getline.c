@@ -62,8 +62,9 @@ static uint32_t mygetline(char *s, uint32_t lim){
         tmp += tinc2;
 
         // extra update tmp if EOL
-        uint32_t tince = (eol_mask & 0) | (~eol_mask & 1);
-        tmp -= tince;
+        uint32_t tince1 = (eol_mask & 0) | (~eol_mask & 1);
+        uint32_t tince2 = (eof_mask & 0) | (~eof_mask & tince1);
+        tmp -= tince2;
 
         // extra update *tmp if EOL
         uint32_t tmpe = (eol_mask & NUL) | (~eol_mask & tmp2);
