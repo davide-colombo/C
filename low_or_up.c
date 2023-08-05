@@ -2,19 +2,55 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static char *valid_low[] = {"l", "low", "lower"};
-static char *valid_up[] = {"u", "up", "upper"};
-
-static size_t strpos(const char *src, char c);
+static char *stripat(const char *src, size_t pos);
 static char *struniq(const char *src, char c);
 static char *stripch(const char *src, char c);
-static char *stripat(const char *src, size_t pos);
+static size_t strpos(const char *src, char c);
 static size_t lenof(const char *src);
+
+static int isalpha(int c);
+static int islower(int c);
+static int isupper(int c);
+
+static size_t countupper(const char *src);
+static size_t countlower(const char *src);
+
+// ============================================================================
+// global variables
+static char *valid_low[] = {"l", "low", "lower"};
+static char *valid_up[] = {"u", "up", "upper"};
 
 // ============================================================================
 // main
 int main(int argc, char **argv){
 
+    char *s;
+
+    // remove '.'
+    s = stripat(argv[0], 0);
+    if(s == NULL){
+        perror("low_or_up.c: remove '.' failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // remove '/'
+    s = stripat(s, 0);
+    if(s == NULL){
+        perror("low_or_up.c; remove '/' failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("isalpha(argv[0][4]) = %d\n", isalpha(argv[0][4]));
+    printf("islower(argv[0][4]) = %d\n", islower(argv[0][4]));
+    printf("isupper(argv[0][4]) = %d\n", isupper(argv[0][4]));
+
+    printf("countupper(\"HELLo\") = %zu\n", countupper("HELLo"));
+    printf("countlower(\"HELLo\") = %zu\n", countlower("HELLo"));
+
+    // free memory
+    if(s != NULL) free((void *)s);
+
+    /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     char *s;
     s = stripat(argv[0], 0);
 
@@ -45,6 +81,7 @@ int main(int argc, char **argv){
 
     if(s2 != NULL)
         free((void *)s2);
+    >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
 
     return 0;
 }
@@ -183,4 +220,73 @@ static size_t lenof(const char *src){
     for(index = 0; *tmp != '\0'; ++index, ++tmp)
         ;
     return index;
+}
+
+// ============================================================================
+// isalpha
+static int isalpha(int c){
+    int ll = c - 65;
+    int lu = c - 90;
+    int ul = c - 97;
+    int uu = c - 122;
+
+    int llmask = ll >= 0;
+    int lumask = lu <= 0;
+    int ulmask = ul >= 0;
+    int uumask = uu <= 0;
+    
+    return (llmask && lumask) || (ulmask && uumask);
+}
+
+// ============================================================================
+// islower
+static int islower(int c){
+    int ul = c - 97;
+    int uu = c - 122;
+
+    int ulmask = ul >= 0;
+    int uumask = uu <= 0;
+    
+    return (ulmask && uumask);
+}
+
+
+// ============================================================================
+// isupper
+static int isupper(int c){
+    int ll = c - 65;
+    int lu = c - 90;
+
+    int llmask = ll >= 0;
+    int lumask = lu <= 0;
+
+    return (llmask && lumask);
+}
+
+// ============================================================================
+// countupper
+static size_t countupper(const char *src){
+    size_t n = 0;
+    char *tmp = src;
+    int ch = *src;
+    while(ch != '\0'){
+        if(isupper(ch)) ++n;
+        ++tmp;
+        ch = *tmp;
+    }
+    return n;
+}
+
+// ============================================================================
+// countlower
+static size_t countlower(const char *src){
+    size_t n = 0;
+    char *tmp = src;
+    int ch = *src;
+    while(ch != '\0'){
+        if(islower(ch)) ++n;
+        ++tmp;
+        ch = *tmp;
+    }
+    return n;
 }
