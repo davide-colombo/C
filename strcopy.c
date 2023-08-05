@@ -10,7 +10,7 @@
 // function prototype, internal linkage
 static char *mystrcp(const char *src, char *dst);
 static size_t mystrlen(const char *src);
-static char *mygetline(size_t lim);
+static size_t mygetline(char **linedst, size_t lim);
 
 int main(int argc, char **argv){
 
@@ -24,8 +24,11 @@ int main(int argc, char **argv){
     }
 
     char *linebuf;
-    while( (linebuf = mygetline(MAX_LINE_LIM_STRCOPY)) != NULL)
+    size_t linesize;
+    while( (linesize = mygetline(&linebuf, MAX_LINE_LIM_STRCOPY)) > 0){
         puts(linebuf);
+        printf("linesize = %zu\n", linesize);
+    }
 
     if(linebuf == NULL){
         errno = 1;
@@ -60,19 +63,20 @@ static size_t mystrlen(const char *src){
 }
 
 // mygetline
-static char *mygetline(size_t lim){
+static size_t mygetline(char **linedst, size_t lim){
 
     // underflow
     if((lim - 1) > lim){
         fprintf(stderr, "strcopy.c: mygetline(), invalid value %zu for argument 'lim'\n", lim);
-        return NULL;
+        *linedst = NULL;
+        return 0;
     }
 
     // initial buffer
     char *linebuf = malloc(BUFFER_INITIAL_STRCOPY);
     if(linebuf == NULL){
         fprintf(stderr, "strcopy.c: mygetline(), initial call to malloc, linebuf is NULL\n");
-        return NULL;
+        return 0;
     }
 
     size_t bufsize = BUFFER_INITIAL_STRCOPY;
@@ -105,7 +109,8 @@ static char *mygetline(size_t lim){
             tmpbuf = realloc(linebuf, bufsize);
             if(tmpbuf == NULL){
                 free((void *)linebuf);
-                return NULL;
+                linebuf = NULL;
+                return 0;
             }
 
             // new memory
@@ -119,7 +124,7 @@ static char *mygetline(size_t lim){
         linebuf[bufindx++] = c;
 
     }while(bufindx < lim && c != '\n');
-
+    
     // end character buffer
     linebuf[bufindx] = '\0';
 
@@ -130,10 +135,13 @@ static char *mygetline(size_t lim){
         if(tmpbuf == NULL){
             fprintf(stderr, "strcopy.c: mygeline(), failed to resize linebuf to %zu bytes\n", (bufindx+1));
             free((void *)linebuf);
-            return NULL;
+            linebuf = NULL;
+            return 0;
         }
         linebuf = tmpbuf;
     }
 
-    return linebuf;
+    *linedst = linebuf;
+    if(c == EOF) return 0;
+    return bufindx;
 }
