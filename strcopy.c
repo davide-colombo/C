@@ -5,6 +5,7 @@
 
 #define MAX_LINE_LIM_STRCOPY    1000
 #define BUFFER_SIZE_STRCOPY     100
+#define BUFFER_INITIAL_STRCOPY  10
 
 // function prototype, internal linkage
 static char *mystrcp(const char *src, char *dst);
@@ -22,9 +23,18 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
 
+    char *linebuf;
+    while( (linebuf = mygetline(MAX_LINE_LIM_STRCOPY)) != NULL)
+        puts(linebuf);
+
+    if(linebuf == NULL){
+        errno = 1;
+    }
+
     if(buffer != NULL)
         free((void *)buffer);
 
+    if(errno) exit(EXIT_FAILURE);
     return EXIT_SUCCESS;
 }
 
@@ -52,37 +62,78 @@ static size_t mystrlen(const char *src){
 // mygetline
 static char *mygetline(size_t lim){
 
-    char *linebuf = NULL;
-    size_t nchmax = 0;
-    size_t nchread = 0;
+    // underflow
+    if((lim - 1) > lim){
+        fprintf(stderr, "strcopy.c: mygetline(), invalid value %zu for argument 'lim'\n", lim);
+        return NULL;
+    }
+
+    // initial buffer
+    char *linebuf = malloc(BUFFER_INITIAL_STRCOPY);
+    if(linebuf == NULL){
+        fprintf(stderr, "strcopy.c: mygetline(), initial call to malloc, linebuf is NULL\n");
+        return NULL;
+    }
+
+    size_t bufsize = BUFFER_INITIAL_STRCOPY;
+    size_t bufindx = 0;
     char *tmpbuf;
+    lim -= 1;
 
     register int32_t c;
-    while((c = getchar()) != EOF){
-        if(nchread >= nchmax){
-            nchmax += 20;
-            if(nchread >= nchmax){
+    do{
+        // realloc
+        if(bufindx >= bufsize){
+            bufsize *= 2;
+            if(bufsize >= lim)
+                bufsize = lim + 1;      // +1 because decremented before
+
+            /* =========================================================
+            // bufsize overflow
+            // we can comment this out because of 'lim'
+            // even if lim == UINT64_MAX, we are adding 1 to 'lim-1'
+
+            if(bufindx >= bufsize){
                 fprintf(stderr, "mygetline(): nchmax overflow\n");
                 free((void *)linebuf);
                 return NULL;
             }
 
+            ========================================================= */
+
             // temporary buffer
-            tmpbuf = realloc(linebuf, nchmax+1);
+            tmpbuf = realloc(linebuf, bufsize);
             if(tmpbuf == NULL){
                 free((void *)linebuf);
                 return NULL;
             }
 
+            // new memory
             linebuf = tmpbuf;
         }
 
-        if(c == '\n')
-            break;
+        // read
+        if( (c = getchar()) == EOF ) break;
         
-        linebuf[nchread++] = c;
-    }
-    if(linebuf != NULL)
-        linebuf[nchread] = '\0';
+        // store
+        linebuf[bufindx++] = c;
 
+    }while(bufindx < lim && c != '\n');
+
+    // end character buffer
+    linebuf[bufindx] = '\0';
+
+    // rescale to precise size if there is extra space
+    // NOTE: lim is equal to lim-1 because indices goes from 0 to lim-1
+    if(bufindx < lim){
+        tmpbuf = realloc(linebuf, bufindx+1);
+        if(tmpbuf == NULL){
+            fprintf(stderr, "strcopy.c: mygeline(), failed to resize linebuf to %zu bytes\n", (bufindx+1));
+            free((void *)linebuf);
+            return NULL;
+        }
+        linebuf = tmpbuf;
+    }
+
+    return linebuf;
 }
