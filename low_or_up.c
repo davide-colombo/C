@@ -1,8 +1,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
 
 static char *valid_low[] = {"l", "low", "lower"};
 static char *valid_up[] = {"u", "up", "upper"};
@@ -10,11 +8,33 @@ static char *valid_up[] = {"u", "up", "upper"};
 static size_t strpos(const char *src, char c);
 static char *stripch(const char *src, char c);
 static char *stripat(const char *src, size_t pos);
+static size_t lenof(const char *src);
 
 // ============================================================================
 // main
 int main(int argc, char **argv){
+
+    char *s;
+    s = stripat(argv[0], 0);
+
+    if(s != NULL){
+        puts(s);
+        printf("lenof(s) = %zu\n", lenof(s));
+    }
+
+    char *s1;
+    s1 = stripch(argv[0], 'o');
+    if(s1 != NULL){
+        puts(s1);
+        printf("lenof(s1) = %zu\n", lenof(s1));
+    }
+
+    if(s != NULL)
+        free((void *)s);
     
+    if(s1 != NULL)
+        free((void *)s1);
+
     return 0;
 }
 
@@ -54,7 +74,7 @@ static char *stripat(const char *src, size_t pos){
 static size_t strpos(const char *src, char c){
     size_t pos;
     const char *tmp;
-    for(pos = 0, tmp = src; tmp != '\0' && tmp != c; ++pos, ++tmp)
+    for(pos = 0, tmp = src; *tmp != '\0' && *tmp != c; ++pos, ++tmp)
         ;
     return pos;
 }
@@ -104,7 +124,7 @@ static size_t lenof(const char *src){
     size_t index;
     // load address before the cycle
     char *tmp = src;
-    for(index = 0; tmp != '\0'; ++index, ++tmp)
+    for(index = 0; *tmp != '\0'; ++index, ++tmp)
         ;
     return index;
 }
