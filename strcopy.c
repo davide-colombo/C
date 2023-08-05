@@ -7,7 +7,8 @@
 #include <errno.h>
 
 // ============================================================================
-#define MAX_LINE_LIM_STRCOPY    1000
+#define MAX_NLINES_STRCOPY      100
+#define MAX_LINE_LIM_STRCOPY    70
 #define BUFFER_SIZE_STRCOPY     100
 #define BUFFER_INITIAL_STRCOPY  10
 #define BUFFER_OFFSET1_STRCOPY  4
@@ -24,17 +25,33 @@ static char *mystrch(char *src, size_t choff, size_t srclen);
 // main
 int main(int argc, char **argv){
 
-    char *linebuf;
-    char *linebuf1;
-    char *linebuf2;
+    // static array with automatic storage duration
+    char *lines[MAX_NLINES_STRCOPY];
 
-    char *cpbuffer;
-    size_t linesize;
+    // the constants in the #define default to type 'int'
+    // to avoid too many conversions I'm using an 'int' here
+    int nlines_read = 0;
 
-    while( (linesize = mygetline(&linebuf, MAX_LINE_LIM_STRCOPY)) > 0){
-        printf("\n<FETCHED NEW LINE>\n");
+    while(nlines_read < MAX_NLINES_STRCOPY){
+        char *linebuf;
+        char *linebuf1;
+        char *linebuf2;
+
+        char *cpbuffer;
+        size_t linesize;
+
+        // NOTE: each call to mygetline() allocates a new buffer or memory dynamically
+        linesize = mygetline(&linebuf, MAX_LINE_LIM_STRCOPY);
+        
+        // stop
+        if(linesize <= 0) break;
+
+        // store the line
+        lines[nlines_read++] = linebuf;
+
+        printf("\n<FETCHED NEW LINE %d, %p>\n", nlines_read, (void *)linebuf);
         //puts(linebuf);
-        printf("linesize = %zu\n", linesize);
+        /*printf("linesize = %zu\n", linesize);
         printf("mystrlen(linebuf) = %zu\n", mystrlen(linebuf));
 
         linebuf1 = mystrch(linebuf, BUFFER_OFFSET1_STRCOPY, linesize);
@@ -63,13 +80,16 @@ int main(int argc, char **argv){
         if(cpbuffer != NULL){
             free((void *)cpbuffer);
             printf("\n\t<FREED COPIED LINE>\n");
-        }
+        }*/
     }
 
-    if(linebuf != NULL){
-        free((void *)linebuf);
-        linebuf1 = linebuf2 = NULL;
-        printf("\n<FREED NEW LINE>\n");
+    // print lines and free memory
+    int i;
+    for(i = 0; i < nlines_read; ++i){
+        printf("\n\t<LINE %d>\n", i);
+        char *tmp = lines[i];
+        puts(tmp);
+        free((void *)tmp);
     }
 
     return EXIT_SUCCESS;
