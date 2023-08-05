@@ -7,8 +7,7 @@
 #include <errno.h>
 
 // ============================================================================
-#define MAX_NLINES_STRCOPY      1
-#define MAX_LINE_LIM_STRCOPY    133
+#define MAX_LINE_LIM_STRCOPY    1000
 #define BUFFER_SIZE_STRCOPY     100
 #define BUFFER_INITIAL_STRCOPY  10
 #define BUFFER_OFFSET1_STRCOPY  4
@@ -25,56 +24,52 @@ static char *mystrch(char *src, size_t choff, size_t srclen);
 // main
 int main(int argc, char **argv){
 
-    // storage for all the line read
-    char *lines[MAX_NLINES_STRCOPY];
+    char *linebuf;
+    char *linebuf1;
+    char *linebuf2;
 
-    for(int i = 0; i < MAX_NLINES_STRCOPY; ++i){
-        char *linebuf;
-        char *linebuf1;
-        char *linebuf2;
+    char *cpbuffer;
+    size_t linesize;
 
-        char *cpbuffer;
-        size_t linesize;
+    while( (linesize = mygetline(&linebuf, MAX_LINE_LIM_STRCOPY)) > 0){
+        printf("\n<FETCHED NEW LINE>\n");
+        //puts(linebuf);
+        printf("linesize = %zu\n", linesize);
+        printf("mystrlen(linebuf) = %zu\n", mystrlen(linebuf));
 
-        linesize = mygetline(&linebuf, MAX_LINE_LIM_STRCOPY);
-        if(linesize > 0){
-            lines[i] = linebuf;
+        linebuf1 = mystrch(linebuf, BUFFER_OFFSET1_STRCOPY, linesize);
+        linebuf2 = mystrch(linebuf, BUFFER_OFFSET2_STRCOPY, linesize);
 
-            // puts(linebuf);
-            printf("linesize = %zu\n", linesize);
-            printf("mystrlen(linebuf) = %zu\n", mystrlen(linebuf));
+        cpbuffer = mystrcp(linebuf, linesize);
+        if(cpbuffer != NULL){
+            //puts(cpbuffer);
+            printf("\n\t<COPIED LINE>\n");
+            printf("mystrlen(buffer) = %zu\n", mystrlen(cpbuffer));
+        }
 
-            linebuf1 = mystrch(linebuf, BUFFER_OFFSET1_STRCOPY, linesize);
-            linebuf2 = mystrch(linebuf, BUFFER_OFFSET2_STRCOPY, linesize);
+        if(linebuf1 != NULL){
+            //puts(linebuf1);
+            printf("\n\t<OFFSET 1>\n");
+            printf("mystrlen(linebuf+%d) = %zu\n", BUFFER_OFFSET1_STRCOPY, mystrlen(linebuf1));
+        }
+        
+        if(linebuf2 != NULL){
+            //puts(linebuf2);
+            printf("\n\t<OFFSET 2>\n");
+            printf("mystrlen(linebuf+%d) = %zu\n", BUFFER_OFFSET2_STRCOPY, mystrlen(linebuf2));
+        }
 
-            cpbuffer = mystrcp(linebuf, linesize);
-            if(cpbuffer != NULL){
-                //puts(cpbuffer);
-                printf("mystrlen(buffer) = %zu\n", mystrlen(cpbuffer));
-            }
-
-            if(linebuf1 != NULL){
-                //puts(linebuf1);
-                printf("mystrlen(linebuf+%d) = %zu\n", BUFFER_OFFSET1_STRCOPY, mystrlen(linebuf1));
-            }
-            
-            if(linebuf2 != NULL){
-                //puts(linebuf2);
-                printf("mystrlen(linebuf+%d) = %zu\n", BUFFER_OFFSET2_STRCOPY, mystrlen(linebuf2));
-            }
-
-            // free cpbuffer
-            if(cpbuffer != NULL)
-                free((void *)cpbuffer);
-
+        // free cpbuffer
+        if(cpbuffer != NULL){
+            free((void *)cpbuffer);
+            printf("\n\t<FREED COPIED LINE>\n");
         }
     }
 
-    // free all lines
-    for(int i = 0; i < MAX_NLINES_STRCOPY; ++i){
-        char *tmp = lines[i];
-        if(tmp != NULL)
-            free((void *)tmp);
+    if(linebuf != NULL){
+        free((void *)linebuf);
+        linebuf1 = linebuf2 = NULL;
+        printf("\n<FREED NEW LINE>\n");
     }
 
     return EXIT_SUCCESS;
@@ -132,6 +127,7 @@ static size_t mygetline(char **linedst, size_t lim){
         fprintf(stderr, "strcopy.c: mygetline(), initial call to malloc, linebuf is NULL\n");
         return 0;
     }
+    printf("\n\t\t(mygetline)<ALLOCATED NEW LINE>\n");
 
     size_t bufsize = BUFFER_INITIAL_STRCOPY;
     size_t bufindx = 0;
@@ -169,6 +165,7 @@ static size_t mygetline(char **linedst, size_t lim){
 
             // new memory
             linebuf = tmpbuf;
+            printf("\n\t\t(mygetline)<RE-ALLOCATED NEW LINE>\n");
         }
 
         // read
@@ -193,6 +190,7 @@ static size_t mygetline(char **linedst, size_t lim){
             return 0;
         }
         linebuf = tmpbuf;
+        printf("\n\t\t(mygetline)<SQUEEZED MEMORY>\n");
     }
 
     // this is a must
