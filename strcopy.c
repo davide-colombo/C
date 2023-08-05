@@ -1,57 +1,85 @@
+// Davide Colombo
+// Saturday, 5 August 2023
 
+// ============================================================================
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 
+// ============================================================================
 #define MAX_LINE_LIM_STRCOPY    1000
 #define BUFFER_SIZE_STRCOPY     100
 #define BUFFER_INITIAL_STRCOPY  10
 
+// ============================================================================
 // function prototype, internal linkage
-static char *mystrcp(const char *src, char *dst);
 static size_t mystrlen(const char *src);
 static size_t mygetline(char **linedst, size_t lim);
+static char *mystrcp(const char *src, size_t srclen);
+static char *mystrch(char *src, size_t choff, size_t srclen);
 
+// ============================================================================
+// main
 int main(int argc, char **argv){
 
-    // LEN automatically cast to 'size_t'
-    // returned type automatically cast to 'char *'
-    // sizeof char always equal to 1 byte, no need to multiply
-    char *buffer = malloc(BUFFER_SIZE_STRCOPY);
-    if(buffer == NULL){
-        perror("main(), line 17: failed to allocate memory for 'buffer'");
-        exit(EXIT_FAILURE);
-    }
-
     char *linebuf;
+    char *linebuf1;
+    char *linebuf2;
+
+    char *cpbuffer;
     size_t linesize;
     while( (linesize = mygetline(&linebuf, MAX_LINE_LIM_STRCOPY)) > 0){
         puts(linebuf);
         printf("linesize = %zu\n", linesize);
         printf("mystrlen(linebuf) = %zu\n", mystrlen(linebuf));
+
+        if(linebuf != NULL){
+            linebuf1 = mystrch(linebuf, 4, linesize);
+            linebuf2 = mystrch(linebuf, 7, linesize);
+
+            cpbuffer = mystrcp(linebuf, linesize);
+            if(cpbuffer != NULL){
+                puts(cpbuffer);
+                printf("mystrlen(buffer) = %zu\n", mystrlen(cpbuffer));
+            }
+
+            if(linebuf1 != NULL){
+                puts(linebuf1);
+                printf("mystrlen(linebuf+4) = %zu\n", mystrlen(linebuf1));
+            }
+            
+            if(linebuf2 != NULL){
+                puts(linebuf2);
+                printf("mystrlen(linebuf+7) = %zu\n", mystrlen(linebuf2));
+            }
+        }
     }
 
-    if(linebuf == NULL){
-        errno = 1;
-    }
+    if(linebuf != NULL)
+        free((void *)linebuf);
 
-    if(buffer != NULL)
-        free((void *)buffer);
+    if(cpbuffer != NULL)
+        free((void *)cpbuffer);
 
-    if(errno) exit(EXIT_FAILURE);
     return EXIT_SUCCESS;
 }
 
+// ============================================================================
 // mystrcp
-// take the string pointed to by src and copy it in dst
-static char *mystrcp(const char *src, char *dst){
-    if(src == NULL || dst == NULL) return NULL;
-    if((mystrlen(dst) - mystrlen(src)) >= 0)
-        for(size_t i = 0; (dst[i] = src[i]) != '\0'; ++i)
-            ;
+static char *mystrcp(const char *src, size_t srclen){
+    size_t dstbytes = srclen + 1;
+    char *dst = malloc(dstbytes);
+    if(dst == NULL){
+        perror("strcopy.c: mystrcp(), dst allocation");
+        exit(EXIT_FAILURE);
+    }
+
+    for(size_t i = 0; (dst[i] = src[i]) != '\0'; ++i)
+        ;
     return dst;
 }
 
+// ============================================================================
 // mystrlen
 // take a string and return it's length without '\0'
 static size_t mystrlen(const char *src){
@@ -63,6 +91,7 @@ static size_t mystrlen(const char *src){
     return i;
 }
 
+// ============================================================================
 // mygetline
 static size_t mygetline(char **linedst, size_t lim){
 
@@ -142,7 +171,28 @@ static size_t mygetline(char **linedst, size_t lim){
         linebuf = tmpbuf;
     }
 
+    // this is a must
+    // arguments to a function are passed 'by value'
+    // pointers are copied
+    // the memory location pointed to 'linebuf' from the main() points to garbage
+    // the same value is passed to the mygetline() function
+    // how? it is copied onto the stack
+    // NOTE: it is copied!
+    // We need to store the address of the block of memory allocated with malloc() at the
+    //  memory address of the 'linebuf' pointer of main(), not that of mygetline().
     *linedst = linebuf;
+
     if(c == EOF) return 0;
     return bufindx;
+}
+
+// ============================================================================
+// mystrch
+// take a string and return a pointer to the character past choff bytes
+// it is implemented in this way because if we want to apply the same
+// function to the same string many times and we have a check for null
+// then a call to mystrlen(), we end up wasting precious cycles.
+static char *mystrch(char *src, size_t choff, size_t srclen){
+    if(choff >= srclen) return NULL;
+    return src+choff;
 }
