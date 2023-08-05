@@ -7,9 +7,12 @@
 #include <errno.h>
 
 // ============================================================================
-#define MAX_LINE_LIM_STRCOPY    1000
+#define MAX_NLINES_STRCOPY      1
+#define MAX_LINE_LIM_STRCOPY    133
 #define BUFFER_SIZE_STRCOPY     100
 #define BUFFER_INITIAL_STRCOPY  10
+#define BUFFER_OFFSET1_STRCOPY  4
+#define BUFFER_OFFSET2_STRCOPY  90
 
 // ============================================================================
 // function prototype, internal linkage
@@ -22,44 +25,57 @@ static char *mystrch(char *src, size_t choff, size_t srclen);
 // main
 int main(int argc, char **argv){
 
-    char *linebuf;
-    char *linebuf1;
-    char *linebuf2;
+    // storage for all the line read
+    char *lines[MAX_NLINES_STRCOPY];
 
-    char *cpbuffer;
-    size_t linesize;
-    while( (linesize = mygetline(&linebuf, MAX_LINE_LIM_STRCOPY)) > 0){
-        puts(linebuf);
-        printf("linesize = %zu\n", linesize);
-        printf("mystrlen(linebuf) = %zu\n", mystrlen(linebuf));
+    for(int i = 0; i < MAX_NLINES_STRCOPY; ++i){
+        char *linebuf;
+        char *linebuf1;
+        char *linebuf2;
 
-        if(linebuf != NULL){
-            linebuf1 = mystrch(linebuf, 4, linesize);
-            linebuf2 = mystrch(linebuf, 7, linesize);
+        char *cpbuffer;
+        size_t linesize;
+
+        linesize = mygetline(&linebuf, MAX_LINE_LIM_STRCOPY);
+        if(linesize > 0){
+            lines[i] = linebuf;
+
+            // puts(linebuf);
+            printf("linesize = %zu\n", linesize);
+            printf("mystrlen(linebuf) = %zu\n", mystrlen(linebuf));
+
+            linebuf1 = mystrch(linebuf, BUFFER_OFFSET1_STRCOPY, linesize);
+            linebuf2 = mystrch(linebuf, BUFFER_OFFSET2_STRCOPY, linesize);
 
             cpbuffer = mystrcp(linebuf, linesize);
             if(cpbuffer != NULL){
-                puts(cpbuffer);
+                //puts(cpbuffer);
                 printf("mystrlen(buffer) = %zu\n", mystrlen(cpbuffer));
             }
 
             if(linebuf1 != NULL){
-                puts(linebuf1);
-                printf("mystrlen(linebuf+4) = %zu\n", mystrlen(linebuf1));
+                //puts(linebuf1);
+                printf("mystrlen(linebuf+%d) = %zu\n", BUFFER_OFFSET1_STRCOPY, mystrlen(linebuf1));
             }
             
             if(linebuf2 != NULL){
-                puts(linebuf2);
-                printf("mystrlen(linebuf+7) = %zu\n", mystrlen(linebuf2));
+                //puts(linebuf2);
+                printf("mystrlen(linebuf+%d) = %zu\n", BUFFER_OFFSET2_STRCOPY, mystrlen(linebuf2));
             }
+
+            // free cpbuffer
+            if(cpbuffer != NULL)
+                free((void *)cpbuffer);
+
         }
     }
 
-    if(linebuf != NULL)
-        free((void *)linebuf);
-
-    if(cpbuffer != NULL)
-        free((void *)cpbuffer);
+    // free all lines
+    for(int i = 0; i < MAX_NLINES_STRCOPY; ++i){
+        char *tmp = lines[i];
+        if(tmp != NULL)
+            free((void *)tmp);
+    }
 
     return EXIT_SUCCESS;
 }
@@ -83,12 +99,21 @@ static char *mystrcp(const char *src, size_t srclen){
 // mystrlen
 // take a string and return it's length without '\0'
 static size_t mystrlen(const char *src){
-    if(src == NULL)
-        return 0;
     size_t i;
     for(i = 0; src[i] != '\0'; ++i)
         ;
     return i;
+}
+
+// ============================================================================
+// mystrch
+// take a string and return a pointer to the character past choff bytes
+// it is implemented in this way because if we want to apply the same
+// function to the same string many times and we have a check for null
+// then a call to mystrlen(), we end up wasting precious cycles.
+static char *mystrch(char *src, size_t choff, size_t srclen){
+    if(choff >= srclen) return NULL;
+    return src+choff;
 }
 
 // ============================================================================
@@ -98,7 +123,6 @@ static size_t mygetline(char **linedst, size_t lim){
     // underflow
     if((lim - 1) > lim){
         fprintf(stderr, "strcopy.c: mygetline(), invalid value %zu for argument 'lim'\n", lim);
-        *linedst = NULL;
         return 0;
     }
 
@@ -184,15 +208,4 @@ static size_t mygetline(char **linedst, size_t lim){
 
     if(c == EOF) return 0;
     return bufindx;
-}
-
-// ============================================================================
-// mystrch
-// take a string and return a pointer to the character past choff bytes
-// it is implemented in this way because if we want to apply the same
-// function to the same string many times and we have a check for null
-// then a call to mystrlen(), we end up wasting precious cycles.
-static char *mystrch(char *src, size_t choff, size_t srclen){
-    if(choff >= srclen) return NULL;
-    return src+choff;
 }
