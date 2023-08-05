@@ -25,13 +25,12 @@ static char *mystrch(char *src, size_t choff, size_t srclen);
 // main
 int main(int argc, char **argv){
 
-    // static array with automatic storage duration
-    char *lines[MAX_NLINES_STRCOPY];
+    // allocate memory for a dynamic array of pointers-to char
+    char **lines = malloc(sizeof(char *) * MAX_NLINES_STRCOPY);
 
     // the constants in the #define default to type 'int'
     // to avoid too many conversions I'm using an 'int' here
     int nlines_read = 0;
-
     while(nlines_read < MAX_NLINES_STRCOPY){
         char *linebuf;
         char *linebuf1;
@@ -42,14 +41,13 @@ int main(int argc, char **argv){
 
         // NOTE: each call to mygetline() allocates a new buffer or memory dynamically
         linesize = mygetline(&linebuf, MAX_LINE_LIM_STRCOPY);
+
+        printf("\n<FETCHED NEW LINE %d, %p>\n", nlines_read, (void *)linebuf);
+        lines[nlines_read++] = linebuf;
         
         // stop
         if(linesize <= 0) break;
 
-        // store the line
-        lines[nlines_read++] = linebuf;
-
-        printf("\n<FETCHED NEW LINE %d, %p>\n", nlines_read, (void *)linebuf);
         //puts(linebuf);
         /*printf("linesize = %zu\n", linesize);
         printf("mystrlen(linebuf) = %zu\n", mystrlen(linebuf));
