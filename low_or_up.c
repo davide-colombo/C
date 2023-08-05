@@ -6,6 +6,7 @@ static char *valid_low[] = {"l", "low", "lower"};
 static char *valid_up[] = {"u", "up", "upper"};
 
 static size_t strpos(const char *src, char c);
+static char *struniq(const char *src, char c);
 static char *stripch(const char *src, char c);
 static char *stripat(const char *src, size_t pos);
 static size_t lenof(const char *src);
@@ -29,11 +30,21 @@ int main(int argc, char **argv){
         printf("lenof(s1) = %zu\n", lenof(s1));
     }
 
+    char *s2;
+    s2 = struniq(argv[0], 'o');
+    if(s2 != NULL){
+        puts(s2);
+        printf("lenof(s2) = %zu\n", lenof(s2));
+    }
+
     if(s != NULL)
         free((void *)s);
     
     if(s1 != NULL)
         free((void *)s1);
+
+    if(s2 != NULL)
+        free((void *)s2);
 
     return 0;
 }
@@ -111,6 +122,51 @@ static char *stripch(const char *src, char c){
         char *tmp = realloc(dst, dstlen+1);
         if(tmp == NULL){
             fprintf(stderr, "stripch(): realloc failed\n");
+            return NULL;
+        }
+        dst = tmp;
+    }
+
+    return dst;
+}
+
+// struniq
+static char *struniq(const char *src, char c){
+    size_t srclen = lenof(src);
+    char *dst = malloc(srclen+1);
+    if(dst == NULL){
+        fprintf(stderr, "struniq(): malloc failed\n");
+        return NULL;
+        // string too large to handle
+        // try to scompose the string into substring
+        // perhaps recursive
+    }
+
+    char *tmp = src;
+    char *dtmp = dst;
+    int currch, nextch;
+    do{
+        currch = *tmp;
+        if(currch == c){
+            char *tnext = tmp+1;
+            nextch = *tnext;
+            while((currch - nextch) == 0){
+                ++tmp, ++tnext;
+                currch = *tmp;
+                nextch = *tnext;
+            }
+        }
+
+        *dtmp = *tmp;
+        if(currch == '\0') break;
+        ++dtmp, ++tmp;
+    }while(1);
+
+    size_t dstlen = lenof(dst);
+    if(dstlen < srclen){
+        char *tmp = realloc(dst, dstlen);
+        if(tmp == NULL){
+            fprintf(stderr, "struniq: realloc failed\n");
             return NULL;
         }
         dst = tmp;
