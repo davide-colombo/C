@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
 // internal linkage
 static uint32_t mygetline(char *s, uint32_t lim){
 
-    int32_t c;
+    register int32_t c;
     char *tmp = s;
     do{
         c = getchar();
