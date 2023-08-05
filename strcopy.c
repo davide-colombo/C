@@ -28,6 +28,7 @@ int main(int argc, char **argv){
     while( (linesize = mygetline(&linebuf, MAX_LINE_LIM_STRCOPY)) > 0){
         puts(linebuf);
         printf("linesize = %zu\n", linesize);
+        printf("mystrlen(linebuf) = %zu\n", mystrlen(linebuf));
     }
 
     if(linebuf == NULL){
