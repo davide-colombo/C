@@ -72,15 +72,18 @@ int main(int argc, char **argv){
     // CHARMIN
     int cmin;
     cmin = charmin(s);
-    printf("charmin(s) = '%c'\n", cmin);
+    printf("charmin(s) = '%c' (%d)\n", cmin, cmin);
 
+    // CHARMAX
     int cmax;
     cmax = charmax(s);
-    printf("charmax(s) = '%c'\n", cmax);
+    printf("charmax(s) = '%c' (%d)\n", cmax, cmax);
 
+    // CHARMEAN
     float cmean;
     cmean = charmean(s, 0, 0);
-    printf("charmean(s) = %3.2f\n", cmean);
+    int avgchar = (int) cmean;
+    printf("charmean(s) = %3.2f ('%c', %d)\n", cmean, avgchar, avgchar);
 
     /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     printf("isalpha(argv[0][4]) = %d\n", isalpha(argv[0][4]));
