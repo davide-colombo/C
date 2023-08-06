@@ -10,6 +10,7 @@
 static char *stripat(const char *src, size_t pos, size_t srclen);
 static char *struniq(const char *src, char c, size_t srclen);
 static char *stripch(const char *src, char c, size_t srclen);
+static size_t strmatch(const char *src, const char *dst);
 static size_t strpos(const char *src, char c);
 static size_t lenof(const char *src);
 
@@ -47,10 +48,15 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
 
-    printf("countupper(\"HELLo\") = %zu\n", countupper("HELLo"));
-    printf("countlower(\"HELLo\") = %zu\n", countlower("HELLo"));
-    printf("countch_range(text, 65, 90) = %zu\n", countch_range(argv[0], ASCII_LB_UPPERALPHA, ASCII_UB_UPPERALPHA));
-    printf("countch_range(text, 97, 122) = %zu\n", countch_range(argv[0], ASCII_LB_LOWERALPHA, ASCII_UB_LOWERALPHA));
+    size_t m = strmatch(s, argv[0]);
+    printf("\"%s\" == \"%s\" ? %zu\n", s, argv[0], m);
+
+    slen = lenof(s);
+    char *cmp = struniq(s, 'o', slen);
+
+    m = strmatch(s, cmp);
+    printf("\"%s\" == \"%s\" ? %zu\n", s, cmp, m);
+    printf("lenof(s) = %zu\n", slen);
 
     /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     printf("isalpha(argv[0][4]) = %d\n", isalpha(argv[0][4]));
@@ -59,6 +65,8 @@ int main(int argc, char **argv){
 
     printf("countupper(\"HELLo\") = %zu\n", countupper("HELLo"));
     printf("countlower(\"HELLo\") = %zu\n", countlower("HELLo"));
+    printf("countch_range(text, 65, 90) = %zu\n", countch_range(argv[0], ASCII_LB_UPPERALPHA, ASCII_UB_UPPERALPHA));
+    printf("countch_range(text, 97, 122) = %zu\n", countch_range(argv[0], ASCII_LB_LOWERALPHA, ASCII_UB_LOWERALPHA));
     >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
 
     // free memory
@@ -102,10 +110,23 @@ int main(int argc, char **argv){
 
 // ============================================================================
 // strmatch
-static int strmatch(const char *src, const char *cmp){
-    size_t i;
-    for(i = 0; src[i] != '\0' && cmp[i] != '\0' && src[i] == cmp[i]; ++i)
-        ;
+// return index of the first mismatch
+// return 0 if one of the two strings is empty
+// return 0 if one string is shorter
+// if exact match the value returned is exactly equal to the value returned to by 'lenof()'
+static size_t strmatch(const char *src, const char *cmp){
+    size_t i = 0;
+    register int sch = *src;
+    register int cch = *cmp;
+    do{
+        if(sch != cch) break;
+        if(sch == '\0') return i;       // sch == cch implicit because no break
+        ++src, ++cmp;
+        sch = *src;
+        cch = *cmp;
+        ++i;
+    }while(1);
+
     return i;
 }
 
