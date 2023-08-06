@@ -134,11 +134,15 @@
 #define CACHE_LINE_BYTES    (size_t) 128
 #define CACHE_LINE_ELEMS(e) ( (CACHE_LINE_BYTES) / (sizeof (e)) )
 
-#define INITIAL_NEL     (size_t) 10
+#define INITIAL_NEL         (size_t) 10
 
 typedef struct _histelem {
     size_t count: 56, ch: 8;
 } histelem;
+
+
+// readstrings
+static size_t readstrings(char **straddr, size_t **offaddr, size_t nstr, size_t strbytes);
 
 // ============================================================================
 // main
@@ -146,28 +150,22 @@ int main(int argc, char **argv){
 
     // contiguous chunk of memory
     char *strings = NULL;
-    strings = malloc(CACHE_LINE_BYTES * INITIAL_NEL);
-    if(strings == NULL){
-        perror("strstat.c: main - failed to allocate memory for 'strings'");
-        exit(EXIT_FAILURE);
-    }
 
     // array of offsets
-    size_t nstrings = 0;
     size_t *offsets = NULL;
-    offsets = malloc(sizeof(size_t) * INITIAL_NEL);
-    if(offsets == NULL){
-        perror("strstat.c: main - failed to allocate memory for 'offsets'");
-        exit(EXIT_FAILURE);
-    }
 
-    // array of histogram elements
+    // read strings from some stream of data
+    size_t nstrings = readstrings(&strings, &offsets, INITIAL_NEL, CACHE_LINE_BYTES);
+
+    // pointer to memory location that will holds the histograms of each string
+    // Each histogram is a collection of histogram elements, one per unique
+    // character found in the string
+    // (sort of "offsets" array above for strings)
+    size_t *nchperstr = NULL;
+
+    // array of histograms for each string
+    // (handled in the same fashion as "strings" array above)
     histelem *hists = NULL;
-    hists = malloc(sizeof(histelem) * INITIAL_NEL);
-    if(hists == NULL){
-        perror("strstat.c: main - failed to allocate memory for 'hists'");
-        exit(EXIT_FAILURE);
-    }
 
     // free memory
     if(strings != NULL)
@@ -176,8 +174,42 @@ int main(int argc, char **argv){
     if(offsets != NULL)
         free((void *)offsets);
     
-    if(hists != NULL)
-        free((void *)hists);
+    if(nchperstr != NULL)
+        free((void *)nchperstr);
 
     return 0;
+}
+
+// ============================================================================
+// mygetline
+// takes the address of the pointer to the memory location where strings are
+//      stored by the "caller".
+// takes the address of the pointer to the memory location where offsets are
+//      stored by the "caller".
+// returns the number of strings read
+static size_t readstrings(char **straddr, size_t **offaddr, size_t nstr, size_t strbytes){
+
+    // malloc
+    char *strs = malloc(strbytes * nstr);
+    if(strs == NULL){
+        perror("strstat.c: readstrings - failed to allocate memory for 'strs'");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t *offs = malloc(sizeof(*offs) * nstr);
+    if(offs == NULL){
+        perror("strstat.c: readstrings - failed to allocate memory for 'offs'");
+        exit(EXIT_FAILURE);
+    }
+
+    // number of strings successfully read
+    size_t nstrs = 0;
+
+    // start reading strings
+
+
+    // assign the arrays
+    *straddr = strs;
+    *offaddr = offs;
+    return nstrs;
 }
