@@ -70,28 +70,29 @@
  * 
  * A string may contain 128 different characters.
  * 
- * At most, to compute the histogram of one string, we need 128 bytes.
- * Depending of the size of the cache line this may be two or one lines.
+ * The ASCII code comprises 128 characters of which 95 are printable.
+ * (https://en.cppreference.com/w/cpp/language/ascii)
+ * 
+ * We consider only strings with printable ASCII characters, therefore
+ *      at most, to compute the histogram of one string, we need 
+ *      95 bytes.
+ * 
+ * Depending of the size of the cache line this may fit into one or more lines.
  * 
  * CHARACTER ENCODING:
  * 
- * We can allocate an array of 128 elements for the histogram of one string.
+ * We can allocate an array of 95 elements for the histogram of one string.
  * 
  * This is straightforward but may be wasteful.
  * 
  * In the extreme case in which one string is made of one char, we are wasting:
  * 
- *                   (128 - 8) / 128 = 93.75% of storage
+ *                   (95 - 1) / 95 = 98.94% of storage
  * 
- * This way we cannot use the char to index into the array (char are ints).
+ * One solution can be to use the most-significant 7 bits of the 8 bytes
+ *      used to encode a histogram entry for a single character.
  * 
- * One solution can be to create a global character table and store its
- *      base address.
- * 
- * Then, use the most-significative 7 bits (2^7 = 128) to get the character
- *      encoding.
- * 
- * The remaining to count the frequency of the character.
+ * The remaining bits to count the frequency of the character.
  * 
  *          |63        57|56                       0|
  * 
@@ -99,12 +100,76 @@
  * 
  * ////////////////////////////////////////////////////////////////////////////
  * 
+ * How to get strings and histograms at the same time
+ * 
+ * 
+ * Strings are stored at a contiguous block of memory.
+ * We keep the base address.
+ * 
+ * Each string respects the "NULL-TERMINATED BYTE STRING" model.
+ * 
+ * We keep track of each string using another array of "offsets".
+ * 
+ * Each entry is a "size_t" type (i.e., 8 bytes on most 64-bit archs).
+ * We keep the base address of this array, too.
+ * 
+ * To retrieve a string we can use a index variable into the array.
+ * 
+ * When adding a string, it is useful to update this array so that,
+ *      the next tentatives to retrieve the specific string can just
+ *      take the base address of the block of memory of all strings
+ *      and simply add the "offset" for the string "i" in the list.
+ * 
+ * In other words, when inserting a string we need to insert an entry
+ *      into the "offset" array by taking the sum of the previous
+ *      entry and adding the length of the inserted string.
+ * 
+ * ////////////////////////////////////////////////////////////////////////////
+ * 
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 
+#define CACHE_LINE_BYTES    (size_t) 128
+#define CACHE_LINE_ELEMS(e) ( (CACHE_LINE_BYTES) / (sizeof (e)) )
 
+#define OFFSETS_INITIAL_NEL     (size_t) 10
+#define STRINGS_INITIAL_NEL     (size_t) 10
+
+typedef struct _histelem {
+    size_t count: 56, ch: 8;
+} histelem;
+
+// ============================================================================
+// main
 int main(int argc, char **argv){
+
+    // contiguous chunk of memory
+    char *strings = NULL;
+    strings = malloc(CACHE_LINE_BYTES * STRINGS_INITIAL_NEL);
+    if(strings == NULL){
+        perror("strstat.c: main - failed to allocate memory for 'strings'");
+        exit(EXIT_FAILURE);
+    }
+
+    // array of offsets
+    size_t nstrings = 0;
+    size_t *offsets = NULL;
+    offsets = malloc(sizeof(size_t) * OFFSETS_INITIAL_NEL);
+    if(offsets == NULL){
+        perror("strstat.c: main - failed to allocate memory for 'offsets'");
+        exit(EXIT_FAILURE);
+    }
+
+
+
+    // free memory
+    if(strings != NULL)
+        free((void *)strings);
+
+    if(offsets != NULL)
+        free((void *)offsets);
 
     return 0;
 }
