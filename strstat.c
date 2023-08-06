@@ -134,8 +134,7 @@
 #define CACHE_LINE_BYTES    (size_t) 128
 #define CACHE_LINE_ELEMS(e) ( (CACHE_LINE_BYTES) / (sizeof (e)) )
 
-#define OFFSETS_INITIAL_NEL     (size_t) 10
-#define STRINGS_INITIAL_NEL     (size_t) 10
+#define INITIAL_NEL     (size_t) 10
 
 typedef struct _histelem {
     size_t count: 56, ch: 8;
@@ -147,7 +146,7 @@ int main(int argc, char **argv){
 
     // contiguous chunk of memory
     char *strings = NULL;
-    strings = malloc(CACHE_LINE_BYTES * STRINGS_INITIAL_NEL);
+    strings = malloc(CACHE_LINE_BYTES * INITIAL_NEL);
     if(strings == NULL){
         perror("strstat.c: main - failed to allocate memory for 'strings'");
         exit(EXIT_FAILURE);
@@ -156,13 +155,19 @@ int main(int argc, char **argv){
     // array of offsets
     size_t nstrings = 0;
     size_t *offsets = NULL;
-    offsets = malloc(sizeof(size_t) * OFFSETS_INITIAL_NEL);
+    offsets = malloc(sizeof(size_t) * INITIAL_NEL);
     if(offsets == NULL){
         perror("strstat.c: main - failed to allocate memory for 'offsets'");
         exit(EXIT_FAILURE);
     }
 
-
+    // array of histogram elements
+    histelem *hists = NULL;
+    hists = malloc(sizeof(histelem) * INITIAL_NEL);
+    if(hists == NULL){
+        perror("strstat.c: main - failed to allocate memory for 'hists'");
+        exit(EXIT_FAILURE);
+    }
 
     // free memory
     if(strings != NULL)
@@ -170,6 +175,9 @@ int main(int argc, char **argv){
 
     if(offsets != NULL)
         free((void *)offsets);
+    
+    if(hists != NULL)
+        free((void *)hists);
 
     return 0;
 }
