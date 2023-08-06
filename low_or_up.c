@@ -2,9 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static char *stripat(const char *src, size_t pos);
-static char *struniq(const char *src, char c);
-static char *stripch(const char *src, char c);
+#define ASCII_LB_UPPERALPHA 65
+#define ASCII_UB_UPPERALPHA 90
+#define ASCII_LB_LOWERALPHA 97
+#define ASCII_UB_LOWERALPHA 122
+
+static char *stripat(const char *src, size_t pos, size_t srclen);
+static char *struniq(const char *src, char c, size_t srclen);
+static char *stripch(const char *src, char c, size_t srclen);
 static size_t strpos(const char *src, char c);
 static size_t lenof(const char *src);
 
@@ -14,6 +19,7 @@ static int isupper(int c);
 
 static size_t countupper(const char *src);
 static size_t countlower(const char *src);
+static size_t countch_range(const char *src, int lb, int ub);
 
 // ============================================================================
 // global variables
@@ -25,27 +31,35 @@ static char *valid_up[] = {"u", "up", "upper"};
 int main(int argc, char **argv){
 
     char *s;
+    size_t slen = lenof(s);
 
     // remove '.'
-    s = stripat(argv[0], 0);
+    s = stripat(argv[0], 0, slen);
     if(s == NULL){
         perror("low_or_up.c: remove '.' failed");
         exit(EXIT_FAILURE);
     }
 
     // remove '/'
-    s = stripat(s, 0);
+    s = stripat(s, 0, slen);
     if(s == NULL){
         perror("low_or_up.c; remove '/' failed");
         exit(EXIT_FAILURE);
     }
 
+    printf("countupper(\"HELLo\") = %zu\n", countupper("HELLo"));
+    printf("countlower(\"HELLo\") = %zu\n", countlower("HELLo"));
+    printf("countch_range(text, 65, 90) = %zu\n", countch_range(argv[0], ASCII_LB_UPPERALPHA, ASCII_UB_UPPERALPHA));
+    printf("countch_range(text, 97, 122) = %zu\n", countch_range(argv[0], ASCII_LB_LOWERALPHA, ASCII_UB_LOWERALPHA));
+
+    /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     printf("isalpha(argv[0][4]) = %d\n", isalpha(argv[0][4]));
     printf("islower(argv[0][4]) = %d\n", islower(argv[0][4]));
     printf("isupper(argv[0][4]) = %d\n", isupper(argv[0][4]));
 
     printf("countupper(\"HELLo\") = %zu\n", countupper("HELLo"));
     printf("countlower(\"HELLo\") = %zu\n", countlower("HELLo"));
+    >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
 
     // free memory
     if(s != NULL) free((void *)s);
@@ -87,9 +101,17 @@ int main(int argc, char **argv){
 }
 
 // ============================================================================
+// strmatch
+static int strmatch(const char *src, const char *cmp){
+    size_t i;
+    for(i = 0; src[i] != '\0' && cmp[i] != '\0' && src[i] == cmp[i]; ++i)
+        ;
+    return i;
+}
+
+// ============================================================================
 //stripat
-static char *stripat(const char *src, size_t pos){
-    size_t srclen = lenof(src);
+static char *stripat(const char *src, size_t pos, size_t srclen){
 
     // to avoid realloc later, allocate memory for 1 byte less!
     char *dst = malloc(srclen);
@@ -120,30 +142,42 @@ static char *stripat(const char *src, size_t pos){
 // ============================================================================
 // strpos
 static size_t strpos(const char *src, char c){
-    size_t pos;
-    const char *tmp;
-    for(pos = 0, tmp = src; *tmp != '\0' && *tmp != c; ++pos, ++tmp)
-        ;
+    register size_t pos;
+    register char *tmp;
+    register int ch;
+    pos = 0;
+    tmp = src;
+    ch = *src;
+    do{
+        if(ch == '\0' || ch == c) break;
+        ++pos, ++tmp;
+        ch = *tmp;
+    }while(1);
     return pos;
 }
 
 // ============================================================================
 // stripch
-static char *stripch(const char *src, char c){
-    size_t srclen = lenof(src);
+static char *stripch(const char *src, char c, size_t srclen){
+    // malloc
     char *dst = malloc(srclen+1);
     if(dst == NULL){
         fprintf(stderr, "stripch(): malloc failed\n");
         return NULL;
     }
     
-    char *tmp = src;
-    char *dtmp = dst;
-    int src_ch;
+    // hint to the processor
+    register char *tmp = src;
+    register char *dtmp = dst;
+    register int src_ch;
+
+    // counter for number of stripped char
+    // helps to avoid the function call to 'lenof()'
+    int nchstripped = 0;
     do{
         src_ch = *tmp;
         while(src_ch == c){
-            ++tmp;
+            ++nchstripped, ++tmp;
             src_ch = *tmp;
         }
         
@@ -154,9 +188,12 @@ static char *stripch(const char *src, char c){
     }while(1);
 
     // realloc
-    size_t dstlen = lenof(dst);
-    if(dstlen < srclen){
-        char *tmp = realloc(dst, dstlen+1);
+    // do not call a function from here inside
+    // this is much better, reduce the bubbles in the code
+    // avoid branches
+    if(nchstripped){
+        size_t dstlen = srclen - nchstripped + 1;
+        tmp = realloc(dst, dstlen);
         if(tmp == NULL){
             fprintf(stderr, "stripch(): realloc failed\n");
             return NULL;
@@ -167,9 +204,10 @@ static char *stripch(const char *src, char c){
     return dst;
 }
 
+// ============================================================================
 // struniq
-static char *struniq(const char *src, char c){
-    size_t srclen = lenof(src);
+static char *struniq(const char *src, char c, size_t srclen){
+    // malloc
     char *dst = malloc(srclen+1);
     if(dst == NULL){
         fprintf(stderr, "struniq(): malloc failed\n");
@@ -181,16 +219,19 @@ static char *struniq(const char *src, char c){
 
     char *tmp = src;
     char *dtmp = dst;
-    int currch, nextch;
+    register int currch, nextch;
+    int nchstripped = 0;
     do{
         currch = *tmp;
         if(currch == c){
             char *tnext = tmp+1;
             nextch = *tnext;
-            while((currch - nextch) == 0){
-                ++tmp, ++tnext;
+            int chdiff = currch - nextch;
+            while(chdiff == 0){
+                ++nchstripped;++tmp, ++tnext;
                 currch = *tmp;
                 nextch = *tnext;
+                chdiff = currch - nextch;
             }
         }
 
@@ -199,9 +240,10 @@ static char *struniq(const char *src, char c){
         ++dtmp, ++tmp;
     }while(1);
 
-    size_t dstlen = lenof(dst);
-    if(dstlen < srclen){
-        char *tmp = realloc(dst, dstlen);
+    // avoid branch to 'lenof()'
+    if(nchstripped){
+        size_t dstlen = srclen - nchstripped + 1;
+        tmp = realloc(dst, dstlen);
         if(tmp == NULL){
             fprintf(stderr, "struniq: realloc failed\n");
             return NULL;
@@ -214,11 +256,14 @@ static char *struniq(const char *src, char c){
 
 // ============================================================================
 static size_t lenof(const char *src){
-    size_t index;
-    // load address before the cycle
+    size_t index = 0;
     char *tmp = src;
-    for(index = 0; *tmp != '\0'; ++index, ++tmp)
-        ;
+    register int ch = *src;
+    do{
+        if(ch == '\0') break;
+        ++index, ++tmp;
+        ch = *tmp;
+    }while(1);
     return index;
 }
 
@@ -270,6 +315,10 @@ static size_t countupper(const char *src){
     char *tmp = src;
     int ch = *src;
     while(ch != '\0'){
+        // rethinking about the cost of calling the function may be worth
+        // depending on the context
+
+        // testing may be highly unpredicatable, therefore the Branch Prediction Unit may cause stalls
         if(isupper(ch)) ++n;
         ++tmp;
         ch = *tmp;
@@ -287,6 +336,28 @@ static size_t countlower(const char *src){
         if(islower(ch)) ++n;
         ++tmp;
         ch = *tmp;
+    }
+    return n;
+}
+
+// ============================================================================
+// count char in range
+// lb: lower bound (included)
+// up: upper bound (included)
+static size_t countch_range(const char *src, int lb, int ub){
+    size_t n = 0;
+    register int ch = *src;
+    while(ch != '\0'){
+        uint32_t chsublb = (uint32_t) ((int32_t)(ch - lb) >> 31);
+        uint32_t chsubub = (uint32_t) ((int32_t)(ch - ub) >> 31);
+
+        uint32_t res1 = (chsublb & 0) | (~chsublb & 1);                             // ch >= lb ? 1 : 0
+        uint32_t res2 = (chsubub & res1) | (~chsubub & 0);                          // ch <= ub ? 1 : 0
+
+        n += res2;
+
+        ++src;
+        ch = *src;
     }
     return n;
 }
