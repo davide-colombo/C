@@ -12,6 +12,7 @@ static char *struniq(const char *src, char c, size_t srclen);
 static char *stripch(const char *src, char c, size_t srclen);
 static size_t strmatch(const char *src, const char *dst);
 static size_t strpos(const char *src, char c);
+static size_t strsum(const char *src);
 static size_t lenof(const char *src);
 
 static int isalpha(int c);
@@ -21,6 +22,10 @@ static int isupper(int c);
 static size_t countupper(const char *src);
 static size_t countlower(const char *src);
 static size_t countch_range(const char *src, int lb, int ub);
+
+static int charmin(const char *src);
+static int charmax(const char *src);
+static float charmean(const char *src, size_t ssum, size_t slen);
 
 // ============================================================================
 // global variables
@@ -57,6 +62,25 @@ int main(int argc, char **argv){
     m = strmatch(s, cmp);
     printf("\"%s\" == \"%s\" ? %zu\n", s, cmp, m);
     printf("lenof(s) = %zu\n", slen);
+
+    size_t ssum = strsum(s);
+    printf("strsum(s) = %zu\n", ssum);
+
+    ssum = strsum(argv[0]);
+    printf("strsum(argv[0]) = %zu\n", ssum);
+
+    // CHARMIN
+    int cmin;
+    cmin = charmin(s);
+    printf("charmin(s) = '%c'\n", cmin);
+
+    int cmax;
+    cmax = charmax(s);
+    printf("charmax(s) = '%c'\n", cmax);
+
+    float cmean;
+    cmean = charmean(s, 0, 0);
+    printf("charmean(s) = %3.2f\n", cmean);
 
     /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     printf("isalpha(argv[0][4]) = %d\n", isalpha(argv[0][4]));
@@ -128,6 +152,68 @@ static size_t strmatch(const char *src, const char *cmp){
     }while(1);
 
     return i;
+}
+
+// ============================================================================
+// strsum
+static size_t strsum(const char *src){
+    size_t sum = 0;
+    register int c = *src;
+    do{
+        sum += c;
+        ++src;
+        c = *src;
+    }while(c != '\0');
+
+    return sum;
+}
+
+// ============================================================================
+// charmin
+// get the minimum ASCII code of the characters in the string
+// do not include '\0' (i.e., zero)
+// return 0 if empty string
+static int charmin(const char *src){
+    register int c = *src;
+    register int cmin = *src;
+    do{
+        if(c == '\0') break;
+        if(c < cmin)
+            cmin = c;
+        ++src;
+        c = *src;
+    }while(1);
+
+    return cmin;
+}
+
+
+// ============================================================================
+// charmax
+// get the maximum char from the
+static int charmax(const char *src){
+    register int c = *src;
+    register int cmax = *src;
+    do{
+        if(c == '\0') break;
+        if(c > cmax)
+            cmax = c;
+        ++src;
+        c = *src;
+    }while(1);
+
+    return cmax;
+}
+
+// ============================================================================
+// charmean
+static float charmean(const char *src, size_t ssum, size_t slen){
+    if(ssum == 0) ssum = strsum(src);
+    if(slen == 0) slen = lenof(src);
+
+    float num = (float) ssum;
+    float den = (float) slen;
+    return (num / den);
 }
 
 // ============================================================================
