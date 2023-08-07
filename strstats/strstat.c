@@ -128,7 +128,13 @@
  * 
  */
 
-#include "strstat.h"
+// project header files
+#include "strstat.h"                // string manipulation
+
+// standard library header files
+#include <stdio.h>                  // for EOF
+#include <stdlib.h>                 // malloc(), free(), ...
+
 
 // ============================================================================
 // readstrings
@@ -138,9 +144,8 @@
 //      stored by the "caller".
 // returns the number of strings read
 size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t strbytes){
-
-    char *strs = malloc(strbytes * nel);
     // malloc
+    char *strs = malloc(strbytes * nel);
     if(strs == NULL){
         perror("strstat.c: readstrings - failed to allocate memory for 'strs'");
         exit(EXIT_FAILURE);
