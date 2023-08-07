@@ -128,62 +128,7 @@
  * 
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#define CACHE_LINE_BYTES    (size_t) 128
-#define CACHE_LINE_ELEMS(e) ( (CACHE_LINE_BYTES) / (sizeof (e)) )
-
-#define INITIAL_NEL         (size_t) 10
-
-typedef struct _histelem {
-    size_t count: 56, ch: 8;
-} histelem;
-
-
-// readstrings
-static size_t readstrings(char **straddr, size_t **offaddr, size_t nstr, size_t strbytes);
-static void printstrings(char **straddr, size_t **offaddr, size_t nel);
-
-// ============================================================================
-// main
-int main(int argc, char **argv){
-
-    // contiguous chunk of memory
-    char *strings = NULL;
-
-    // array of offsets
-    size_t *offsets = NULL;
-
-    // read strings from some stream of data
-    size_t nstrings = readstrings(&strings, &offsets, INITIAL_NEL, CACHE_LINE_BYTES);
-    printf("nstrings = %zu\n", nstrings);
-
-    // print all the strings
-    printstrings(&strings, &offsets, nstrings);
-
-    // pointer to memory location that will holds the histograms of each string
-    // Each histogram is a collection of histogram elements, one per unique
-    // character found in the string
-    // (sort of "offsets" array above for strings)
-    size_t *nchperstr = NULL;
-
-    // array of histograms for each string
-    // (handled in the same fashion as "strings" array above)
-    histelem *hists = NULL;
-
-    // free memory
-    if(strings != NULL)
-        free((void *)strings);
-
-    if(offsets != NULL)
-        free((void *)offsets);
-    
-    if(nchperstr != NULL)
-        free((void *)nchperstr);
-
-    return 0;
-}
+#include "strstat.h"
 
 // ============================================================================
 // readstrings
@@ -192,10 +137,10 @@ int main(int argc, char **argv){
 // takes the address of the pointer to the memory location where offsets are
 //      stored by the "caller".
 // returns the number of strings read
-static size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t strbytes){
+size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t strbytes){
 
-    // malloc
     char *strs = malloc(strbytes * nel);
+    // malloc
     if(strs == NULL){
         perror("strstat.c: readstrings - failed to allocate memory for 'strs'");
         exit(EXIT_FAILURE);
@@ -248,14 +193,14 @@ static size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t s
 
 // ============================================================================
 // printstrings
-static void printstrings(char **straddr, size_t **offaddr, size_t nel){
+void printstrings(char **straddr, size_t **offaddr, size_t nel){
 
     // base address
     register char *strptr = *straddr;
     register size_t *offptr = *offaddr;
     
     // IMPORTANT: postfix decrement is a must, otherwise if "nel = 0" it would
-    //      SIZE_MAX that is a huge positive integer..
+    //      SIZE_MAX that is a huge positive integer
     while(nel--){
         strptr += (*offptr);    // point to the next string
         puts(strptr);           // print the current string
