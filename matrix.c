@@ -16,8 +16,8 @@
 
 #include <stdio.h>
 
-#define NROWS   4u
-#define NCOLS   4u
+#define NROWS   2048u
+#define NCOLS   2048u
 
 int matrix[NROWS][NCOLS];
 
@@ -28,8 +28,8 @@ int main(int argc, char **argv){
     int (*erow)[NCOLS] = matrix+NROWS;
     do{
         printf("curr row = %p\n", crow);
-        printf("sizeof row = %zu\n", sizeof *crow);
-        printf("sizeof row / sizeof el = %zu\n", sizeof *crow / sizeof *crow[0]);
+        //printf("sizeof row = %zu\n", sizeof *crow);
+        //printf("sizeof row / sizeof el = %zu\n", sizeof *crow / sizeof *crow[0]);
         ++crow;
     }while( (erow - crow) > 0);
 
