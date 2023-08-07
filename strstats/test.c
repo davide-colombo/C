@@ -7,9 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define INITIAL_NEL         (size_t) 10
-#define CACHE_LINE_BYTES    (size_t) 128
-#define CACHE_LINE_ELEMS(e) ( (CACHE_LINE_BYTES) / (sizeof (e)) )
 
 int main(int argc, char **argv){
 
@@ -19,8 +16,20 @@ int main(int argc, char **argv){
     // array of offsets
     size_t *offsets = NULL;
 
-    // read strings from some stream of data
-    size_t nstrings = readstrings(&strings, &offsets, INITIAL_NEL, CACHE_LINE_BYTES);
+    // number of allocated elements
+    size_t nel = 0UL;
+    size_t strbytes = 0UL;
+
+    // read strings from stdin
+    ssize_t nstrings = readstrings(&strings, &offsets, &strbytes, &nel);
+
+    // bad practice, need to handle properly
+    if(nstrings == -1){
+        fprintf(stderr, "Failed to read strings from standard input\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // How many strings read
     printf("nstrings = %zu\n", nstrings);
 
     // print all the strings

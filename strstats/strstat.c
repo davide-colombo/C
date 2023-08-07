@@ -130,12 +130,11 @@
 
 // project header files
 #include "strstat.h"                // string manipulation
-#include "stralloc.h"               // memory allocation
 
 // standard library header files
 #include <stdio.h>                  // for EOF
 #include <stdlib.h>                 // malloc(), free(), ...
-
+#include <stddef.h>                 // for size_t
 
 // ============================================================================
 // readstrings
@@ -143,16 +142,34 @@
 //      stored by the "caller".
 // takes the address of the pointer to the memory location where offsets are
 //      stored by the "caller".
-// returns the number of strings read
-size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t strbytes){
+// returns the number of strings read or -1 on error
+ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *n){
     // strings
-    char *strs = stralloc(strbytes * nel);
+    char *strs = *straddr;
+    if(*straddr == NULL){
+        // allocate array
+        *strbytes = CACHE_LINE_BYTES;
+        strs = malloc(CACHE_LINE_BYTES);
+        if(strs == NULL){
+            perror("strstat.c: readstrings - failed to allocate memory for 'strs'");
+            return -1;
+        }
+    }
     
     // offsets
-    size_t *offs = offalloc(nel);
+    // if '*offaddr' is NOT-NULL and the memory is not set to 0
+    // the behavior is UNDEFINED
+    size_t *offs = *offaddr;
+    if(*offaddr == NULL){
 
-    // the first string is stored at 0 bytes offset from the base address
-    offs[0] = (size_t) 0;
+        // safer to call 'calloc' because these are counters
+        *n = INITIAL_NEL;
+        offs = calloc(INITIAL_NEL, sizeof(size_t));
+        if(offs == NULL){
+            perror("strstat.c: readstrings - failed to allocate memory for 'offs'");
+            return -1;
+        }
+    }
 
     // number of strings successfully read
     size_t nstrs = 0;
@@ -162,9 +179,18 @@ size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t strbytes
     register char *tmpstr = strs;
     register size_t *tmpoff = &offs[1];
     register size_t eloff = 0;
+    register int eof_reached = 0;
     do{
         c = getchar();
-        if(c == EOF) break;
+        if(c == EOF){
+            eof_reached = 1;
+            c = '\0';
+        }
+
+        ++eloff;                // increment offset
+        *tmpstr = c;            // store the character
+        ++tmpstr;
+
         if(c == '\n'){
             // update strings array
             *tmpstr = '\0';        // finished to read this string
@@ -176,13 +202,10 @@ size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t strbytes
 
             ++tmpoff;           // move to the offset for the next string
             eloff = 0;          // initialize counter to previous value
+
             ++nstrs;            // increment the counter of "number-of-strings" read
         }
-
-        ++eloff;                // increment offset
-        *tmpstr = c;               // store the character
-        ++tmpstr;
-    }while(1);
+    }while(!eof_reached);
 
     // assign the arrays
     *straddr = strs;
