@@ -1,6 +1,11 @@
 
-#include <stdio.h>
+// project header files
 #include "strstat.h"
+#include "hist.h"
+
+// standard library header files
+#include <stdio.h>
+#include <stdlib.h>
 
 #define INITIAL_NEL         (size_t) 10
 #define CACHE_LINE_BYTES    (size_t) 128

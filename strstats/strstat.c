@@ -130,6 +130,7 @@
 
 // project header files
 #include "strstat.h"                // string manipulation
+#include "stralloc.h"               // memory allocation
 
 // standard library header files
 #include <stdio.h>                  // for EOF
@@ -144,18 +145,11 @@
 //      stored by the "caller".
 // returns the number of strings read
 size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t strbytes){
-    // malloc
-    char *strs = malloc(strbytes * nel);
-    if(strs == NULL){
-        perror("strstat.c: readstrings - failed to allocate memory for 'strs'");
-        exit(EXIT_FAILURE);
-    }
-
-    size_t *offs = malloc(sizeof(*offs) * nel);
-    if(offs == NULL){
-        perror("strstat.c: readstrings - failed to allocate memory for 'offs'");
-        exit(EXIT_FAILURE);
-    }
+    // strings
+    char *strs = stralloc(strbytes * nel);
+    
+    // offsets
+    size_t *offs = offalloc(nel);
 
     // the first string is stored at 0 bytes offset from the base address
     offs[0] = (size_t) 0;
@@ -165,7 +159,7 @@ size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t strbytes
 
     // start reading strings
     register int c;
-    register char *tmp = strs;
+    register char *tmpstr = strs;
     register size_t *tmpoff = &offs[1];
     register size_t eloff = 0;
     do{
@@ -173,8 +167,8 @@ size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t strbytes
         if(c == EOF) break;
         if(c == '\n'){
             // update strings array
-            *tmp = '\0';        // finished to read this string
-            ++tmp;              // move the string pointer to the next empty spot
+            *tmpstr = '\0';        // finished to read this string
+            ++tmpstr;              // move the string pointer to the next empty spot
             
             // update offsets array
             ++eloff;            // one character more because of the '\0'
@@ -186,8 +180,8 @@ size_t readstrings(char **straddr, size_t **offaddr, size_t nel, size_t strbytes
         }
 
         ++eloff;                // increment offset
-        *tmp = c;               // store the character
-        ++tmp;
+        *tmpstr = c;               // store the character
+        ++tmpstr;
     }while(1);
 
     // assign the arrays
