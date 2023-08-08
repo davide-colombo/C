@@ -179,10 +179,7 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
     register int c;
     do{
         // string array realloc
-        if(nbytes >=(tmpbytes-1)){
-            printf("\n\t<REALLOC STRS>\n");
-            printf("\n\t<current size %zu>\n", tmpbytes);
-            
+        if(nbytes >= (tmpbytes-1)){
             // double the size
             size_t newbytes = tmpbytes * 2;
             if(tmpbytes > newbytes){
@@ -201,18 +198,16 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
             // store
             tmpbytes = newbytes;
             strs = tmpstr;
-            printf("\n\t<new size %zu>\n", newbytes);
         }
 
         // offset array realloc
         // NOTE: if realloc expands the same array, memory content
         //          of the new area is undefined
         if(nstrs >= (tmpnel-1)){
-            printf("\n\t<REALLOC OFFS>\n");
-            printf("\n\t<current size %zu>\n", tmpnel);
-            
             // double the size
             size_t newnel = tmpnel * 2;
+
+            // unsigned overflow
             if(tmpnel > newnel){
                 perror("strstat.c: readstrings - failed to double 'tmpnel'");
                 return -1;
@@ -228,7 +223,6 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
             // store
             tmpnel = newnel;
             offs = tmpoff;
-            printf("\n\t<new size %zu>\n", newnel);
         }
 
         // next character
