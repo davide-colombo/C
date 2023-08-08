@@ -135,6 +135,10 @@
 #include <stdlib.h>                 // malloc(), free(), ...
 #include <stddef.h>                 // for size_t
 
+// internal linkage
+static uint32_t countbits(size_t n);
+static size_t ceiltosmallestpowof2tonbits(size_t n, uint32_t nbits);
+
 // ============================================================================
 // readstrings
 // takes the address of the pointer to the memory location where strings are
@@ -261,9 +265,14 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
         }
     }while(!eof_reached);
 
+    const uint32_t nbitscacheline = countbits(CACHE_LINE_BYTES-1);
+
     // shrink to precise size 'strs'
     if(nbytes < tmpbytes){
-        size_t *tmpstr = realloc(strs, nbytes);
+        const size_t ceiledbytes = ceiltosmallestpowof2tonbits(nbytes, nbitscacheline);
+        nbytes = ceiledbytes + CACHE_LINE_BYTES;
+
+        char *tmpstr = realloc(strs, nbytes);
         if(tmpstr == NULL){
             perror("strstat.c: readstrings - failed to shrink memory for 'strs'");
             return -1;
@@ -274,7 +283,11 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
 
     // shrink to precise size 'offs'
     if(nstrs < tmpnel){
-        size_t *tmpoff = realloc(offs, nstrs * sizeof(size_t));
+        size_t nbytes = nstrs * sizeof(size_t);
+        const size_t ceiledbytes = ceiltosmallestpowof2tonbits(nbytes, nbitscacheline);
+        nbytes = ceiledbytes + CACHE_LINE_BYTES;
+
+        size_t *tmpoff = realloc(offs, nbytes);
         if(tmpoff == NULL){
             perror("strstat.c: readstrings - failed to shrink memory for 'offs'");
             return -1;
@@ -303,4 +316,20 @@ void printstrings(char **straddr, size_t **offaddr, size_t nel){
         ++offptr;
         --nel;
     }
+}
+
+// ============================================================================
+// countbits
+static uint32_t countbits(size_t n){
+    uint32_t c;
+    for(c = 0; n; ++c)
+        n &= n - 1;
+    return c;
+}
+
+// ============================================================================
+// ceiltosmallestpowof2ton
+static size_t ceiltosmallestpowof2tonbits(size_t n, uint32_t nbits){
+    size_t v = n >> nbits;
+    return (v << nbits);
 }
