@@ -182,28 +182,50 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
     register int eof_reached = 0;
     do{
         c = getchar();
-        if(c == EOF){
-            eof_reached = 1;
-            c = '\0';
-        }
 
-        ++eloff;                // increment offset
-        *tmpstr = c;            // store the character
+        // update end loop condition (without an if)
+        /*uint32_t eof_mask = (uint32_t) (((int32_t)(c == EOF) << 31) >> 31);
+        eof_reached = (eof_mask & 1) | (~eof_mask & 0);             // c == EOF ? 1 : 0
+        c = (eof_mask & '\0') | (~eof_mask & c);                    // c == EOF ? '\0' : c
+        */
+
+       if(c == EOF){
+            c = '\0';
+            eof_reached = 1;
+       }
+       
+        ++eloff;                    // increment offset
+        *tmpstr = c;                // store the character
         ++tmpstr;
+
+        /*uint32_t eol_mask = (uint32_t) (((int32_t)(c == '\n') << 31) >> 31);
+        uint32_t tmpch = (eol_mask & '\0') | (~eol_mask & c);
+        uint32_t inc = (eol_mask & 1) | (~eol_mask & 0);
+
+        *tmpstr = tmpch;
+        tmpstr += inc;
+
+        eloff += inc;
+        *tmpoff = eloff;
+
+        tmpoff += inc;
+        eloff = 0;
+
+        nstrs += inc;*/
 
         if(c == '\n'){
             // update strings array
-            *tmpstr = '\0';        // finished to read this string
-            ++tmpstr;              // move the string pointer to the next empty spot
+            *tmpstr = '\0';         // finished to read this string
+            ++tmpstr;               // move the string pointer to the next empty spot
             
             // update offsets array
-            ++eloff;            // one character more because of the '\0'
-            *tmpoff = eloff;    // store offset for the current string
+            ++eloff;                // one character more because of the '\0'
+            *tmpoff = eloff;        // store offset for the current string
 
-            ++tmpoff;           // move to the offset for the next string
-            eloff = 0;          // initialize counter to previous value
+            ++tmpoff;               // move to the offset for the next string
+            eloff = 0;              // initialize counter to previous value
 
-            ++nstrs;            // increment the counter of "number-of-strings" read
+            ++nstrs;                // increment the counter of "number-of-strings" read
         }
     }while(!eof_reached);
 
