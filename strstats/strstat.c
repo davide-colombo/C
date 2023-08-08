@@ -144,42 +144,94 @@
 // returns the number of strings read or -1 on error
 ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *n){
     // strings
+    size_t tmpbytes = *strbytes;
     char *strs = *straddr;
-    if(*straddr == NULL){
+    if(strs == NULL){
         // allocate array
-        *strbytes = CACHE_LINE_BYTES;
         strs = malloc(CACHE_LINE_BYTES);
         if(strs == NULL){
             perror("strstat.c: readstrings - failed to allocate memory for 'strs'");
             return -1;
         }
+        // stores
+        tmpbytes = CACHE_LINE_BYTES;
     }
     
     // offsets
     // if '*offaddr' is NOT-NULL and the memory is not set to 0
     // the behavior is UNDEFINED
+    size_t tmpnel = *n;
     size_t *offs = *offaddr;
     if(*offaddr == NULL){
-
         // safer to call 'calloc' because these are counters
-        *n = INITIAL_NEL;
         offs = calloc(INITIAL_NEL, sizeof(size_t));
         if(offs == NULL){
             perror("strstat.c: readstrings - failed to allocate memory for 'offs'");
             return -1;
         }
+        tmpnel = INITIAL_NEL;
     }
 
-    // number of strings successfully read
-    size_t nstrs = 0;
-
     // start reading strings
-    register int c;
-    register char *tmpstr = strs;
-    register size_t *tmpoff = &offs[1];
-    register size_t eloff = 0;
+    register size_t nstrs = 0;
+    register size_t nbytes = 0;
     register int eof_reached = 0;
+    register int c;
     do{
+        // string array realloc
+        if(nbytes >= tmpbytes){
+            printf("\n\t<REALLOC STRS>\n");
+            printf("\n\t<current size %zu>\n", tmpbytes);
+            
+            // double the size
+            size_t newbytes = tmpbytes * 2;
+            if(tmpbytes > newbytes){
+                // unsigned overflow
+                perror("strstat.c: readstrings - failed to double 'tmpbytes'");
+                return -1;
+            }
+
+            // realloc
+            char *tmpstr = realloc(strs, newbytes);
+            if(tmpstr == NULL){
+                perror("strstat.c: readstrings - failed to realloc 'strs'");
+                return -1;
+            }
+            
+            // store
+            tmpbytes = newbytes;
+            strs = tmpstr;
+            printf("\n\t<new size %zu>\n", newbytes);
+        }
+
+        // offset array realloc
+        // NOTE: if realloc expands the same array, memory content
+        //          of the new area is undefined
+        if(nstrs >= tmpnel){
+            printf("\n\t<REALLOC OFFS>\n");
+            printf("\n\t<current size %zu>\n", tmpnel);
+            
+            // double the size
+            size_t newnel = tmpnel * 2;
+            if(tmpnel > newnel){
+                perror("strstat.c: readstrings - failed to double 'tmpnel'");
+                return -1;
+            }
+
+            // realloc
+            size_t *tmpoff = realloc(offs, newnel);
+            if(tmpoff == NULL){
+                perror("strstat.c: readstrings - failed to realloc 'offs'");
+                return -1;
+            }
+
+            // store
+            tmpnel = newnel;
+            offs = tmpoff;
+            printf("\n\t<new size %zu>\n", newnel);
+        }
+
+        // next character
         c = getchar();
 
         if(c == EOF){
@@ -187,29 +239,26 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
             eof_reached = 1;
         }
 
-        ++eloff;                    // increment offset
-        *tmpstr = c;                // store the character
-        ++tmpstr;
+        strs[nbytes] = c;           // store the character
+        ++nbytes;                   // one byte successfully read
 
         if(c == '\n'){
             // update strings array
-            *tmpstr = '\0';         // finished to read this string
-            ++tmpstr;               // move the string pointer to the next empty spot
+            strs[nbytes] = '\0';    // finished to read this string
+            ++nbytes;               // move the string pointer to the next empty spot
             
             // update offsets array
-            ++eloff;                // one character more because of the '\0'
-            *tmpoff = eloff;        // store offset for the current string
-
-            ++tmpoff;               // move to the offset for the next string
-            eloff = 0;              // initialize counter to previous value
-
             ++nstrs;                // increment the counter of "number-of-strings" read
+            offs[nstrs] = nbytes;   // store offset for the current string
         }
     }while(!eof_reached);
 
-    // assign the arrays
+    // Store output
     *straddr = strs;
     *offaddr = offs;
+    *n = nstrs;
+    *strbytes = nbytes;
+
     return nstrs;
 }
 
@@ -218,14 +267,14 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
 void printstrings(char **straddr, size_t **offaddr, size_t nel){
 
     // base address
-    register char *strptr = *straddr;
+    register char *basestr = *straddr;
     register size_t *offptr = *offaddr;
     
     // IMPORTANT: postfix decrement is a must, otherwise if "nel = 0" it would
     //      SIZE_MAX that is a huge positive integer
     while(nel--){
-        strptr += (*offptr);    // point to the next string
-        puts(strptr);           // print the current string
-        ++offptr;               // get the next offset
+        size_t off = *offptr;
+        puts(basestr + off);            // print the current string
+        ++offptr;                       // get the next offset
     }
 }
