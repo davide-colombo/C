@@ -130,14 +130,11 @@
 
 // project header files
 #include "strstat.h"                // string manipulation
+#include "strbytes.h"               // bytes manipulation
 
 // standard library header files
 #include <stdlib.h>                 // malloc(), free(), ...
 #include <stddef.h>                 // for size_t
-
-// internal linkage
-static uint32_t countbits(size_t n);
-static size_t ceiltosmallestpowof2tonbits(size_t n, uint32_t nbits);
 
 // ============================================================================
 // readstrings
@@ -146,94 +143,87 @@ static size_t ceiltosmallestpowof2tonbits(size_t n, uint32_t nbits);
 // takes the address of the pointer to the memory location where offsets are
 //      stored by the "caller".
 // returns the number of strings read or -1 on error
-ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *n){
-    // strings
-    size_t tmpbytes = *strbytes;
-    char *strs = *straddr;
-    if(strs == NULL){
-        // allocate array (bytes == number-of-elements)
-        strs = malloc(CACHE_LINE_BYTES);
-        if(strs == NULL){
+ssize_t readstrings(strptr_t saddr, offptr_t *oaddr, bytes_t *sbytes, strsize_t *noff){
+
+    bytes_t alloc_sbytes = *sbytes;
+    str_t s = *saddr;
+    if( s == NULL ){
+        s = malloc(CACHE_LINE_BYTES);
+        if( s == NULL ){
             perror("strstat.c: readstrings - failed to allocate memory for 'strs'");
             return -1;
         }
-        // stores
-        tmpbytes = CACHE_LINE_BYTES;
+        alloc_sbytes = CACHE_LINE_BYTES;
     }
     
-    // offsets
-    // if '*offaddr' is NOT-NULL and the memory is not set to 0
-    // the behavior is UNDEFINED
-    size_t tmpnel = *n;
-    size_t *offs = *offaddr;
-    if(*offaddr == NULL){
-        // safer to call 'calloc' because these are counters
-        offs = calloc(INITIAL_NEL, sizeof(size_t));
-        if(offs == NULL){
+    strsize_t alloc_noff = *noff;
+    offptr_t o = *oaddr;
+    if( o == NULL ){
+        o = calloc(INITIAL_NEL, sizeof(strsize_t));
+        if( o == NULL ){
             perror("strstat.c: readstrings - failed to allocate memory for 'offs'");
             return -1;
         }
-        tmpnel = INITIAL_NEL;
+        alloc_noff = INITIAL_NEL;
     }
 
     // start reading strings
-    register size_t nstrs = 0;
-    register size_t nbytes = 0;
     register int eof_reached = 0;
-    register size_t *tmpsz = &offs[1];              // &offs[0] must be 0
-    register char *tmpbuf = &strs[0];
+
+    register size_t strs_read = 0;
+    register bytes_t bytes_read = 0;
+
+    register offptr_t offbuf = &o[1];              // &offs[0] must be 0
+    register str_t readbuf = &s[0];
     register int c;
     do{
         // string array realloc
-        if(nbytes >= (tmpbytes-1)){
-            // double the size
-            size_t newbytes = tmpbytes * 2;
-            if(tmpbytes > newbytes){
+        if(bytes_read >= (alloc_sbytes-1)){
+            bytes_t newbytes = alloc_sbytes * 2;
+            if(alloc_sbytes > newbytes){
                 // unsigned overflow
-                perror("strstat.c: readstrings - failed to double 'tmpbytes'");
+                perror("strstat.c: readstrings - failed to double 'alloc_sbytes'");
                 return -1;
             }
 
             // realloc
-            char *tmpstr = realloc(strs, newbytes);
-            if(tmpstr == NULL){
-                perror("strstat.c: readstrings - failed to realloc 'strs'");
+            char *realloc_sbuf = realloc(s, newbytes);
+            if(realloc_sbuf == NULL){
+                perror("strstat.c: readstrings - failed to realloc 's'");
                 return -1;
             }
             
-            // store
-            tmpbytes = newbytes;
-            strs = tmpstr;
-            tmpbuf = tmpstr + nbytes;
+            // update pointer location
+            alloc_sbytes = newbytes;
+            s = realloc_sbuf;
+            readbuf = realloc_sbuf + bytes_read;
         }
 
         // offset array realloc
         // NOTE: if realloc expands the same array, memory content
         //          of the new area is undefined
-        if(nstrs >= (tmpnel-1)){
-            // double the size
-            size_t newnel = tmpnel * 2;
-
-            // unsigned overflow
-            if(tmpnel > newnel){
-                perror("strstat.c: readstrings - failed to double 'tmpnel'");
+        if(strs_read >= (alloc_noff-1)){
+            strsize_t newnel = alloc_noff * 2;
+            if(alloc_noff > newnel){
+                // unsigned overflow
+                perror("strstat.c: readstrings - failed to double 'alloc_noff'");
                 return -1;
             }
 
             // realloc
-            size_t *tmpoff = realloc(offs, sizeof(size_t) * newnel);
-            if(tmpoff == NULL){
+            offptr_t realloc_obuf = realloc(o, sizeof(strsize_t) * newnel);
+            if(realloc_obuf == NULL){
                 perror("strstat.c: readstrings - failed to realloc 'offs'");
                 return -1;
             }
 
-            // store
-            tmpnel = newnel;
-            offs = tmpoff;
-            tmpsz = tmpoff + nstrs;
+            // update pointer location
+            alloc_noff = newnel;
+            o = realloc_obuf;
+            offbuf = realloc_obuf + strs_read;
         }
 
-        // next character
+        // read next character
         c = getchar();
 
         if(c == EOF){
@@ -241,9 +231,9 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
             eof_reached = 1;
         }
 
-        *tmpbuf = c;
-        ++tmpbuf;
-        ++nbytes;                       // one byte successfully read
+        *readbuf = c;
+        ++readbuf;
+        ++bytes_read;                       // one byte successfully read
 
         if(c == '\n'){
             // NOTE: using local pointers to dynamically-allocated arrays
@@ -252,57 +242,58 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
             // Furthermore, the processor can decide to schedule ops
             // out-of-order
 
-            ++nbytes;                   // move the string pointer to the next empty spot
-            ++nstrs;                    // increment the counter of "number-of-strings" read
+            ++bytes_read;                   // move the string pointer to the next empty spot
+            ++strs_read;                    // increment the counter of "number-of-strings" read
 
             // update strings array
-            *tmpbuf = '\0';
-            ++tmpbuf;
+            *readbuf = '\0';
+            ++readbuf;
 
             // update offset array
-            *tmpsz = nbytes;
-            ++tmpsz;
+            *offbuf = bytes_read;
+            ++offbuf;
         }
     }while(!eof_reached);
 
-    const uint32_t nbitscacheline = countbits(CACHE_LINE_BYTES-1);
+    // get the position of the bit of the cache line size
+    // Cache line size must be a power of two (typically 64 or 128 bytes)
+    // Given 64 0b0100 0000, if we subtract 1 we obtain 0b0011 1111
+    // And if we count the number of bits in 63 (i.e., 6) we know that
+    //      the 'cache line size' is 64 bytes
 
-    // shrink to precise size 'strs'
-    if(nbytes < tmpbytes){
-        const size_t ceiledbytes = ceiltosmallestpowof2tonbits(nbytes, nbitscacheline);
-        nbytes = ceiledbytes + CACHE_LINE_BYTES;
+    const cntbit_t nbitscacheline = countbits(CACHE_LINE_BYTES-1);
 
-        char *tmpstr = realloc(strs, nbytes);
-        if(tmpstr == NULL){
+    // shrink to precise size array of strings
+    if(bytes_read < alloc_sbytes){
+        bytes_read = smallpow2raisedb(bytes_read, nbitscacheline) + CACHE_LINE_BYTES;
+        char *realloc_sbuf_shrink = realloc(s, bytes_read);
+        if(realloc_sbuf_shrink == NULL){
             perror("strstat.c: readstrings - failed to shrink memory for 'strs'");
             return -1;
         }
         // update pointer to location
-        strs = tmpstr;
+        s = realloc_sbuf_shrink;
     }
 
-    // shrink to precise size 'offs'
-    if(nstrs < tmpnel){
-        size_t nbytes = nstrs * sizeof(size_t);
-        const size_t ceiledbytes = ceiltosmallestpowof2tonbits(nbytes, nbitscacheline);
-        nbytes = ceiledbytes + CACHE_LINE_BYTES;
-
-        size_t *tmpoff = realloc(offs, nbytes);
-        if(tmpoff == NULL){
+    // shrink to precise size array of offsets
+    if(strs_read < alloc_noff){
+        bytes_t noffbytes = smallpow2raisedb(strs_read * sizeof(size_t), nbitscacheline) + CACHE_LINE_BYTES;
+        offptr_t realloc_obuf_shrink = realloc(o, noffbytes);
+        if(realloc_obuf_shrink == NULL){
             perror("strstat.c: readstrings - failed to shrink memory for 'offs'");
             return -1;
         }
-        // update pointer
-        offs = tmpoff;
+        // update pointer location
+        o = realloc_obuf_shrink;
     }
 
     // Store output
-    *straddr = strs;
-    *offaddr = offs;
-    *n = nstrs;
-    *strbytes = nbytes;
+    *saddr = s;
+    *oaddr = o;
+    *noff = strs_read;
+    *sbytes = bytes_read;
 
-    return nstrs;
+    return strs_read;
 }
 
 // ============================================================================
@@ -316,20 +307,4 @@ void printstrings(char **straddr, size_t **offaddr, size_t nel){
         ++offptr;
         --nel;
     }
-}
-
-// ============================================================================
-// countbits
-static uint32_t countbits(size_t n){
-    uint32_t c;
-    for(c = 0; n; ++c)
-        n &= n - 1;
-    return c;
-}
-
-// ============================================================================
-// ceiltosmallestpowof2ton
-static size_t ceiltosmallestpowof2tonbits(size_t n, uint32_t nbits){
-    size_t v = n >> nbits;
-    return (v << nbits);
 }

@@ -11,17 +11,17 @@
 int main(int argc, char **argv){
 
     // contiguous chunk of memory
-    char *strings = NULL;
+    str_t sarr = NULL;
 
     // array of offsets
-    size_t *offsets = NULL;
+    offptr_t oarr = NULL;
 
     // number of allocated elements
-    size_t nel = 0UL;
-    size_t strbytes = 0UL;
+    strsize_t str_read = 0UL;
+    bytes_t bytes_read = 0UL;
 
     // read strings from stdin
-    ssize_t nstrings = readstrings(&strings, &offsets, &strbytes, &nel);
+    ssize_t nstrings = readstrings(&sarr, &oarr, &bytes_read, &str_read);
 
     // bad practice, need to handle properly
     if(nstrings == -1){
@@ -33,7 +33,7 @@ int main(int argc, char **argv){
     // printf("nstrings = %zu\n", nstrings);
 
     // print all the strings
-    // printstrings(&strings, &offsets, nstrings);
+    printstrings(&sarr, &oarr, nstrings);
 
     // pointer to memory location that will holds the histograms of each string
     // Each histogram is a collection of histogram elements, one per unique
@@ -46,11 +46,11 @@ int main(int argc, char **argv){
     histelem_t *hists = NULL;
 
     // free memory
-    if(strings != NULL)
-        free((void *)strings);
+    if(sarr != NULL)
+        free((void *)sarr);
 
-    if(offsets != NULL)
-        free((void *)offsets);
+    if(oarr != NULL)
+        free((void *)oarr);
     
     if(nchperstr != NULL)
         free((void *)nchperstr);
