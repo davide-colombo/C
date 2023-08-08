@@ -176,6 +176,8 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
     register size_t nstrs = 0;
     register size_t nbytes = 0;
     register int eof_reached = 0;
+    register size_t *tmpsz = &offs[1];              // &offs[0] must be 0
+    register char *tmpbuf = &strs[0];
     register int c;
     do{
         // string array realloc
@@ -198,6 +200,7 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
             // store
             tmpbytes = newbytes;
             strs = tmpstr;
+            tmpbuf = tmpstr + nbytes;
         }
 
         // offset array realloc
@@ -223,6 +226,7 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
             // store
             tmpnel = newnel;
             offs = tmpoff;
+            tmpsz = tmpoff + nstrs;
         }
 
         // next character
@@ -233,17 +237,27 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
             eof_reached = 1;
         }
 
-        strs[nbytes] = c;           // store the character
-        ++nbytes;                   // one byte successfully read
+        *tmpbuf = c;
+        ++tmpbuf;
+        ++nbytes;                       // one byte successfully read
 
         if(c == '\n'){
+            // NOTE: using local pointers to dynamically-allocated arrays
+            // gives the compiler more freedom to optimize because
+            // instructions are now independent
+            // Furthermore, the processor can decide to schedule ops
+            // out-of-order
+
+            ++nbytes;                   // move the string pointer to the next empty spot
+            ++nstrs;                    // increment the counter of "number-of-strings" read
+
             // update strings array
-            strs[nbytes] = '\0';    // finished to read this string
-            ++nbytes;               // move the string pointer to the next empty spot
-            
-            // update offsets array
-            ++nstrs;                // increment the counter of "number-of-strings" read
-            offs[nstrs] = nbytes;   // store offset for the current string
+            *tmpbuf = '\0';
+            ++tmpbuf;
+
+            // update offset array
+            *tmpsz = nbytes;
+            ++tmpsz;
         }
     }while(!eof_reached);
 
