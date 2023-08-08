@@ -6,9 +6,9 @@
 
 // histogram element
 // stores a character and its absolute frequency of occurrence in a string
-typedef struct _histelem {
+typedef struct histelem {
     size_t count: 56, ch: 8;
-} histelem;
+} histelem_t;
 
 
 #endif

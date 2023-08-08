@@ -43,7 +43,7 @@ int main(int argc, char **argv){
 
     // array of histograms for each string
     // (handled in the same fashion as "strings" array above)
-    histelem *hists = NULL;
+    histelem_t *hists = NULL;
 
     // free memory
     if(strings != NULL)

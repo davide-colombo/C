@@ -132,7 +132,6 @@
 #include "strstat.h"                // string manipulation
 
 // standard library header files
-#include <stdio.h>                  // for EOF
 #include <stdlib.h>                 // malloc(), free(), ...
 #include <stddef.h>                 // for size_t
 
@@ -183,35 +182,14 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
     do{
         c = getchar();
 
-        // update end loop condition (without an if)
-        /*uint32_t eof_mask = (uint32_t) (((int32_t)(c == EOF) << 31) >> 31);
-        eof_reached = (eof_mask & 1) | (~eof_mask & 0);             // c == EOF ? 1 : 0
-        c = (eof_mask & '\0') | (~eof_mask & c);                    // c == EOF ? '\0' : c
-        */
-
-       if(c == EOF){
+        if(c == EOF){
             c = '\0';
             eof_reached = 1;
-       }
-       
+        }
+
         ++eloff;                    // increment offset
         *tmpstr = c;                // store the character
         ++tmpstr;
-
-        /*uint32_t eol_mask = (uint32_t) (((int32_t)(c == '\n') << 31) >> 31);
-        uint32_t tmpch = (eol_mask & '\0') | (~eol_mask & c);
-        uint32_t inc = (eol_mask & 1) | (~eol_mask & 0);
-
-        *tmpstr = tmpch;
-        tmpstr += inc;
-
-        eloff += inc;
-        *tmpoff = eloff;
-
-        tmpoff += inc;
-        eloff = 0;
-
-        nstrs += inc;*/
 
         if(c == '\n'){
             // update strings array
