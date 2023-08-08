@@ -147,7 +147,7 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
     size_t tmpbytes = *strbytes;
     char *strs = *straddr;
     if(strs == NULL){
-        // allocate array
+        // allocate array (bytes == number-of-elements)
         strs = malloc(CACHE_LINE_BYTES);
         if(strs == NULL){
             perror("strstat.c: readstrings - failed to allocate memory for 'strs'");
@@ -179,7 +179,7 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
     register int c;
     do{
         // string array realloc
-        if(nbytes >= tmpbytes){
+        if(nbytes >=(tmpbytes-1)){
             printf("\n\t<REALLOC STRS>\n");
             printf("\n\t<current size %zu>\n", tmpbytes);
             
@@ -207,7 +207,7 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
         // offset array realloc
         // NOTE: if realloc expands the same array, memory content
         //          of the new area is undefined
-        if(nstrs >= tmpnel){
+        if(nstrs >= (tmpnel-1)){
             printf("\n\t<REALLOC OFFS>\n");
             printf("\n\t<current size %zu>\n", tmpnel);
             
@@ -219,7 +219,7 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
             }
 
             // realloc
-            size_t *tmpoff = realloc(offs, newnel);
+            size_t *tmpoff = realloc(offs, sizeof(size_t) * newnel);
             if(tmpoff == NULL){
                 perror("strstat.c: readstrings - failed to realloc 'offs'");
                 return -1;
@@ -274,6 +274,7 @@ void printstrings(char **straddr, size_t **offaddr, size_t nel){
     //      SIZE_MAX that is a huge positive integer
     while(nel--){
         size_t off = *offptr;
+        printf("off = %zu\n", off);
         puts(basestr + off);            // print the current string
         ++offptr;                       // get the next offset
     }
