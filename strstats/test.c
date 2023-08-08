@@ -30,10 +30,10 @@ int main(int argc, char **argv){
     }
 
     // How many strings read
-    printf("nstrings = %zu\n", nstrings);
+    // printf("nstrings = %zu\n", nstrings);
 
     // print all the strings
-    printstrings(&strings, &offsets, nstrings);
+    // printstrings(&strings, &offsets, nstrings);
 
     // pointer to memory location that will holds the histograms of each string
     // Each histogram is a collection of histogram elements, one per unique

@@ -261,6 +261,28 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
         }
     }while(!eof_reached);
 
+    // shrink to precise size 'strs'
+    if(nbytes < tmpbytes){
+        size_t *tmpstr = realloc(strs, nbytes);
+        if(tmpstr == NULL){
+            perror("strstat.c: readstrings - failed to shrink memory for 'strs'");
+            return -1;
+        }
+        // update pointer to location
+        strs = tmpstr;
+    }
+
+    // shrink to precise size 'offs'
+    if(nstrs < tmpnel){
+        size_t *tmpoff = realloc(offs, nstrs * sizeof(size_t));
+        if(tmpoff == NULL){
+            perror("strstat.c: readstrings - failed to shrink memory for 'offs'");
+            return -1;
+        }
+        // update pointer
+        offs = tmpoff;
+    }
+
     // Store output
     *straddr = strs;
     *offaddr = offs;
@@ -273,17 +295,12 @@ ssize_t readstrings(char **straddr, size_t **offaddr, size_t *strbytes, size_t *
 // ============================================================================
 // printstrings
 void printstrings(char **straddr, size_t **offaddr, size_t nel){
-
-    // base address
     register char *basestr = *straddr;
     register size_t *offptr = *offaddr;
-    
-    // IMPORTANT: postfix decrement is a must, otherwise if "nel = 0" it would
-    //      SIZE_MAX that is a huge positive integer
-    while(nel--){
+    while(nel){
         size_t off = *offptr;
-        printf("off = %zu\n", off);
-        puts(basestr + off);            // print the current string
-        ++offptr;                       // get the next offset
+        puts(basestr + off);
+        ++offptr;
+        --nel;
     }
 }
