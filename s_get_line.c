@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define S_GET_LINE_BUFSIZE 64
+#define S_GET_LINE_BUFSIZE 16
 
 /* >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  * 'buffer' should point to a writable memory location;
@@ -36,12 +36,23 @@ int main(int argc, char **argv){
     
     // char *buffer;       /* DANGEROUS */
 
-    if( s_get_line_write(buffer, S_GET_LINE_BUFSIZE) == NULL){
+    // Test 1
+    if( s_get_line_write(buffer, S_GET_LINE_BUFSIZE) == NULL )
         fprintf(stderr, "failed\n");
-        exit(EXIT_FAILURE);
-    }
-
     puts(buffer);
+
+    // Test NULL
+    if( s_get_line_write(NULL, 10) == NULL )
+        fprintf(stderr, "failed\n");
+
+    // Test 'bufsize' 0
+    if( s_get_line_write(buffer, 0) == NULL )
+        fprintf(stderr, "failed\n");
+
+    // Test bufsize much larger than actual 'buffer' size
+    // this is UNDEFINED and DANGEROUS
+    //if( s_get_line_write(buffer, 128) == NULL )
+    //    fprintf(stderr, "failed\n");
 
     return 0;
 }
@@ -51,8 +62,15 @@ int main(int argc, char **argv){
  * do not reallocate.
  */
 static char *s_get_line_write(char *buffer, size_t bufsize){
-    if(buffer == NULL) return NULL;
-    if(bufsize == 0) return NULL;
+    if(buffer == NULL){
+        // set a specific error code
+        return NULL;
+    }
+
+    if(bufsize == 0){
+        // set a specific error code
+        return NULL;
+    }
 
     do{
         int tmpc = getchar();
