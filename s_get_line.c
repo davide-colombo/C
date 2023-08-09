@@ -52,43 +52,24 @@ int main(int argc, char **argv){
  */
 static char *s_get_line_write(char *buffer, size_t bufsize){
     if(buffer == NULL) return NULL;
-    if(bufsize == 0) return NULL;           // 'buffer' not NULL with 'bufsize' = 0 is bad
+    if(bufsize == 0) return NULL;
 
-    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    // Version 1 uses directly the function arguments
-    /*bufsize -= 1;
-    register int c;
-    while(bufsize-- && (c = getchar()) != EOF && c != '\n')
-        *buffer++ = c;
-    *buffer = '\0';*/
-
-    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    // Version 2 uses local variables
-    /*register size_t lim = bufsize - 1;
-    register char *tmp = buffer;
-    
-    while(lim-- && (c = getchar()) != EOF && c != '\n')
-        *tmp++ = c;
-    *tmp = '\0';*/
-
-    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    // Version 3, this is the best version, no branch in between
-    register int c;
     do{
-        c = getchar();
-        uint32_t eof_mask = (uint32_t) (((int32_t)(c == EOF) << 31) >> 31);
-        uint32_t eol_mask = (uint32_t) (((int32_t)(c == '\n') << 31) >> 31);
+        int tmpc = getchar();
+
+        uint32_t eof_mask = (uint32_t) (((int32_t)(tmpc == EOF) << 31) >> 31);
+        uint32_t eol_mask = (uint32_t) (((int32_t)(tmpc == '\n') << 31) >> 31);
         uint32_t eob_mask = (uint32_t) (((int32_t)(bufsize <= 1) << 31) >> 31);
 
-        int tmpchar1 = (eof_mask & '\0') | (~eof_mask & c);
+        int tmpchar1 = (eof_mask & '\0') | (~eof_mask & tmpc);
         int tmpchar2 = (eol_mask & '\0') | (~eol_mask & tmpchar1);
         int tmpchar3 = (eob_mask & '\0') | (~eob_mask & tmpchar2);
 
-        c = tmpchar3;
         *buffer = tmpchar3;
+        if(!tmpchar3) break;    // first store, then break
         buffer += 1;
         bufsize -= 1;
-    }while(c);
+    }while(1);
 
     return buffer;
 }
