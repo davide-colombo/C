@@ -42,6 +42,7 @@ char *error_msg[] = {
 
 static err_t s_get_line_write(char *buffer, size_t bufsize);
 static err_t s_get_line_append(char *buffer, size_t bufsize, size_t bufidx);
+static err_t __s_get_line_core(char *buffer, size_t bufsize, size_t bufidx);
 
 // Statically allocated arrays MUST NOT be declared as LOCAL VARIABLES.
 char buffer[S_GET_LINE_BUFSIZE];
@@ -96,36 +97,9 @@ int main(int argc, char **argv){
  * do not reallocate.
  */
 static err_t s_get_line_write(char *buffer, size_t bufsize){
-    if(buffer == NULL){
-        return S_GET_LINE_NULL_BUFFER;
-    }
-
-    if(bufsize == 0){
-        return S_GET_LINE_ZERO_BUFSIZE;
-    }
-
-    do{
-        int tmpc = getchar();
-
-        uint32_t eof_mask = (uint32_t) (((int32_t)(tmpc == EOF) << 31) >> 31);
-        uint32_t eol_mask = (uint32_t) (((int32_t)(tmpc == '\n') << 31) >> 31);
-        uint32_t eob_mask = (uint32_t) (((int32_t)(bufsize <= 1) << 31) >> 31);
-
-        int tmpchar1 = (eof_mask & '\0') | (~eof_mask & tmpc);
-        int tmpchar2 = (eol_mask & '\0') | (~eol_mask & tmpchar1);
-        int tmpchar3 = (eob_mask & '\0') | (~eob_mask & tmpchar2);
-
-        int tmpmove = (eob_mask & 0) | (~eob_mask & 1);
-
-        *buffer = tmpchar3;
-
-        if(!tmpchar3) break;
-
-        buffer += tmpmove;
-        bufsize -= tmpmove;
-    }while(1);
-
-    return S_GET_LINE_SUCCESS;
+    if(buffer == NULL) return S_GET_LINE_NULL_BUFFER;
+    if(bufsize == 0) return S_GET_LINE_ZERO_BUFSIZE;
+    return __s_get_line_core(buffer, bufsize, 0);
 }
 
 // ============================================================================
@@ -136,9 +110,11 @@ static err_t s_get_line_append(char *buffer, size_t bufsize, size_t bufidx){
     if(buffer == NULL) return S_GET_LINE_NULL_BUFFER;
     if(bufsize == 0) return S_GET_LINE_ZERO_BUFSIZE;
     if(bufidx >= bufsize) return S_GET_LINE_INVALID_BUFIDX;
+    return __s_get_line_core(buffer - bufidx, bufsize + bufidx, bufidx);
+}
 
-    bufsize -= bufidx;
-    buffer += bufidx;
+// ============================================================================
+static err_t __s_get_line_core(char *buffer, size_t bufsize, size_t bufidx){
     do{
         int tmpc = getchar();
 
