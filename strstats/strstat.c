@@ -265,7 +265,7 @@ ssize_t readstrings(strptr_t saddr, offptr_t *oaddr, bytes_t *sbytes, strsize_t 
 
     // shrink to precise size array of strings
     if(bytes_read < alloc_sbytes){
-        bytes_read = smallpow2raisedb(bytes_read, nbitscacheline) + CACHE_LINE_BYTES;
+        bytes_read = smallest2expb(bytes_read, nbitscacheline) + CACHE_LINE_BYTES;
         char *realloc_sbuf_shrink = realloc(s, bytes_read);
         if(realloc_sbuf_shrink == NULL){
             perror("strstat.c: readstrings - failed to shrink memory for 'strs'");
@@ -277,7 +277,7 @@ ssize_t readstrings(strptr_t saddr, offptr_t *oaddr, bytes_t *sbytes, strsize_t 
 
     // shrink to precise size array of offsets
     if(strs_read < alloc_noff){
-        bytes_t noffbytes = smallpow2raisedb(strs_read * sizeof(size_t), nbitscacheline) + CACHE_LINE_BYTES;
+        bytes_t noffbytes = smallest2expb(strs_read * sizeof(size_t), nbitscacheline) + CACHE_LINE_BYTES;
         offptr_t realloc_obuf_shrink = realloc(o, noffbytes);
         if(realloc_obuf_shrink == NULL){
             perror("strstat.c: readstrings - failed to shrink memory for 'offs'");

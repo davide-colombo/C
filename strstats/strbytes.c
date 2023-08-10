@@ -18,7 +18,7 @@ cntbit_t countbits(bytes_t nbytes){
 }
 
 // ============================================================================
-// smallpow2raisedb
-bytes_t smallpow2raisedb(bytes_t n, cntbit_t b){
+// smallest2expb
+bytes_t smallest2expb(bytes_t n, cntbit_t b){
     return ((n >> b) << b);
 }

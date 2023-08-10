@@ -12,6 +12,6 @@ typedef size_t bytes_t;
 typedef uint32_t cntbit_t;
 
 cntbit_t countbits(bytes_t n);
-bytes_t smallpow2raisedb(bytes_t n, cntbit_t b);
+bytes_t smallest2expb(bytes_t n, cntbit_t b);
 
 #endif
