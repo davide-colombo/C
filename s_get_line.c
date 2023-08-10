@@ -6,6 +6,8 @@
 #define S_GET_LINE_BUFSIZE 64
 
 typedef enum {
+    S_GET_LINE_UNSET = -2,
+    S_GET_LINE_EOF = -1,
     S_GET_LINE_SUCCESS = 0,
     S_GET_LINE_NULL_BUFFER,
     S_GET_LINE_ZERO_BUFSIZE,
@@ -89,6 +91,15 @@ int main(int argc, char **argv){
         fprintf(stderr, "%s\n", error_msg[status]);
     puts(initialized_buffer);
 
+    // Consume all remaining lines
+    while( (status = s_get_line_write(buffer, S_GET_LINE_BUFSIZE)) != S_GET_LINE_EOF ){
+        if(status != S_GET_LINE_SUCCESS){
+            fprintf(stderr, "%s\n", error_msg[status]);
+            exit(EXIT_FAILURE);
+        }
+        puts(buffer);
+    }
+
     return 0;
 }
 
@@ -115,26 +126,37 @@ static err_t s_get_line_append(char *buffer, size_t bufsize, size_t bufidx){
 
 // ============================================================================
 static err_t __s_get_line_core(char *buffer, size_t bufsize, size_t bufidx){
+    err_t status = S_GET_LINE_UNSET;
     do{
         int tmpc = getchar();
 
+        // masks
         uint32_t eof_mask = (uint32_t) (((int32_t)(tmpc == EOF) << 31) >> 31);
         uint32_t eol_mask = (uint32_t) (((int32_t)(tmpc == '\n') << 31) >> 31);
-        uint32_t eob_mask = (uint32_t) (((int32_t)(bufsize <= 1) << 31) >> 31);
+        uint32_t eob_mask = (uint32_t) (((int32_t)(bufsize <= 2) << 31) >> 31);
 
+        // values
         int tmpchar1 = (eof_mask & '\0') | (~eof_mask & tmpc);
         int tmpchar2 = (eol_mask & '\0') | (~eol_mask & tmpchar1);
+
+        int tmpstatus1 = (eof_mask & S_GET_LINE_EOF) | (~eof_mask & status);
+        int tmpstatus2 = (eol_mask & S_GET_LINE_SUCCESS) | (~eol_mask & tmpstatus1);
+        int tmpstatus3 = (eob_mask & S_GET_LINE_SUCCESS) | (~eob_mask & tmpstatus2);
+        
+        int tmpmove1 = (eof_mask & 0) | (~eof_mask & 1);
+        int tmpmove2 = (eol_mask & 0) | (~eol_mask & tmpmove1);
+        int tmpmove3 = (eob_mask & 1) | (~eob_mask & tmpmove2);
+
+        // stores
+        status      = tmpstatus3;
+        *buffer     = tmpchar2;
+        buffer      += tmpmove3;
+        bufsize     -= tmpmove3;
+
+        // extra increment to to add '\0' in case of END-OF-BUFFER
         int tmpchar3 = (eob_mask & '\0') | (~eob_mask & tmpchar2);
-
-        int tmpmove = (eob_mask & 0) | (~eob_mask & 1);
-
         *buffer = tmpchar3;
+    }while(status == S_GET_LINE_UNSET);
 
-        if(!tmpchar3) break;
-
-        buffer += tmpmove;
-        bufsize -= tmpmove;
-    }while(1);
-
-    return S_GET_LINE_SUCCESS;
+    return status;
 }
